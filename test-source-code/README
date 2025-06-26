@@ -1,0 +1,1 @@
+This directory must contain all of the test source code, and only the test source code. It must also contain the modified doctest.h file that is given here. Note, doctest.h is ignored in the .gitignore file and will not be committed to your repo. The file containing the tests must be named: tests.cpp
