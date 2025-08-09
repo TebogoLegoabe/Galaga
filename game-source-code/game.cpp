@@ -86,12 +86,12 @@ void Game::drawMenu()
 void Game::drawGame()
 {
     // Draw the game elements
-    ClearBackground(DARKGREEN); // Clear the screen with a white background
+    ClearBackground(BLUE); // Clear the screen with a blue background
 
     // For now, we will just draw a simple message
-    const char *message = "Game is running... Press ESC to return to menu";
-    int textWidth = MeasureText(message, 20);
-    DrawText(message, (screenWidth - textWidth) / 2, screenHeight / 2, 20, DARKGRAY);
+    const char *message = "Tebza is still busy cooking the game! \n\n Please try again later......sorry!";
+    int textWidth = MeasureText(message, 30);
+    DrawText(message, (screenWidth - textWidth) / 2, screenHeight / 2, 30, WHITE);
 }
 
 void Game::run()
