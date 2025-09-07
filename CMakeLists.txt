@@ -1,3 +1,5 @@
+# DO NOT MODIFY THIS FILE! - THIS WILL BE USED TO BUILD YOUR PROJECT
+
 # ------------------------------------------------------------------------------
 # LICENCE (MIT):
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -23,11 +25,24 @@
 # https://github.com/robloach/raylib-cpp
 # ------------------------------------------------------------------------------
 message("Processing CMakeLists.txt")
-cmake_minimum_required(VERSION 4.0) # the currently stable version of CMake is required
+cmake_minimum_required(VERSION 4.0.2) # the currently stable version of CMake is required
 project(elen3009-project)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+if (WIN32)
+    # Check for minimum MinGW version
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+        if (CMAKE_CXX_COMPILER_VERSION VERSION_LESS "15.1.0")
+            message(FATAL_ERROR "MinGW version 15.1.0 or higher is required on Windows.")
+        endif()
+    endif()
+endif()
+
+# Put all generated executables and docs in a top-level "release" folder
+set(OUTPUT_DIR "${CMAKE_BINARY_DIR}/release")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${OUTPUT_DIR}/bin")
 
 # ====================== Download and Build Dependencies ======================
 include(FetchContent)
@@ -38,8 +53,8 @@ if (NOT raylib_FOUND)
     FetchContent_Declare(
         raylib
         GIT_REPOSITORY https://github.com/raysan5/raylib.git
-        GIT_TAG 5.0
-        GIT_SHALLOW 1 # only clone latest commit, restricted to branch names and tags
+        GIT_TAG 5.5
+        GIT_SHALLOW TRUE # only clone latest commit, restricted to branch names and tags
     )
     FetchContent_MakeAvailable(raylib)
 endif()
@@ -50,20 +65,21 @@ if (NOT raylib_cpp_FOUND)
     FetchContent_Declare(
         raylib_cpp
         GIT_REPOSITORY https://github.com/RobLoach/raylib-cpp.git
-        GIT_TAG v5.0.2
-        GIT_SHALLOW 1
+        GIT_TAG v5.5.0
+        GIT_SHALLOW TRUE
     )
     FetchContent_MakeAvailable(raylib_cpp)
 endif()
 
-# doctest - modified doctest.h in the test-source-code directory is used for testing. This is purely to enable test discovery by CTest.
+# doctest - modified doctest.h compatible with raylib
+# see issue: https://github.com/raysan5/raylib/issues/1217
 find_package(doctest QUIET)
 if (NOT doctest_FOUND)
     FetchContent_Declare(
         doctest
-        GIT_REPOSITORY https://github.com/doctest/doctest.git
-        GIT_TAG v2.4.11
-        GIT_SHALLOW 1
+        GIT_REPOSITORY https://github.com/stephenlevitt/doctest-with-raylib.git
+        GIT_TAG v1.0
+        GIT_SHALLOW TRUE
     )
     FetchContent_MakeAvailable(doctest)
 endif()
@@ -81,9 +97,9 @@ list(REMOVE_ITEM TESTS_SRC "${CMAKE_SOURCE_DIR}/game-source-code/${MAIN_CPP}") #
 
 # Game executable
 set(GAME_EXE "game") # name of the game executable
-add_executable(${GAME_EXE} ${GAME_SRC}) # shows the console window
+add_executable(${GAME_EXE} ${GAME_SRC}) # shows the console output
 
-# To prevent the console window from appearing when the game is run, replace the above line with this one:
+# To prevent the console output from appearing when the game is run, replace the above line with this one:
 # add_executable(${GAME_EXE} WIN32 ${GAME_SRC})
 
 #  Test executable
@@ -91,6 +107,8 @@ set(TESTS_EXE "tests") # name of the test executable
 set(SRC_PATH "${CMAKE_SOURCE_DIR}/game-source-code") # path to game source code folder
 add_executable(${TESTS_EXE} ${TESTS_SRC})
 target_include_directories(${TESTS_EXE} PRIVATE ${SRC_PATH})
+target_include_directories(${TESTS_EXE} PRIVATE "${doctest_SOURCE_DIR}/doctest") # include doctest header
+
 
 # ================================= Linker Settings ==========================================
 
@@ -107,7 +125,7 @@ endif()
 
 if (LINUX)
     message("Producing targets for Linux")
-    message("Note: your releases uploaded to GitHub have to run on Windows")
+    message("NB: your releases have to build and run on Windows using the toolchain given in Lab 0")
 
     # LINUX: Telling the linker to statically link the libgcc and libstdc++ to out project.
     # (Source: https://gcc.gnu.org/onlinedocs/gcc/Link-Options.html)
@@ -119,7 +137,7 @@ endif()
 
 if (APPLE)
     message("Producing targets for macOS")
-    message("Note: your releases uploaded to GitHub have to run on Windows")
+    message("NB: your releases have to build and run on Windows using the toolchain given in Lab 0")
 
     # Include paths for IntelliSense and compiling
     include_directories("/path/to/raylib-cpp/include")
@@ -151,21 +169,20 @@ find_package(Doxygen REQUIRED doxygen)
 
 # Doxygen options: see https://www.doxygen.nl/manual/config.html
 set(DOXYGEN_GENERATE_TREEVIEW YES)
+# Place doxygen output in release/doxygen (HTML will be under release/doxygen/html)
+set(DOXYGEN_OUTPUT_DIRECTORY "${OUTPUT_DIR}/doxygen")
 
 doxygen_add_docs(doxygen_docs
     "${SRC_PATH}"
     ALL
     COMMENT "Generate HTML documentation")
 
-# ===================== Create Upload Directory for GitHub Release =========================
+# ==================================== Copy resources ==================================
 
+# Copy resources into the "release" folder
 add_custom_target(
-    package_for_upload ALL # make sure this is always run
-    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources ${CMAKE_BINARY_DIR}/upload/resources
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:game> ${CMAKE_BINARY_DIR}/upload/bin/$<TARGET_FILE_NAME:game>
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_FILE:tests> ${CMAKE_BINARY_DIR}/upload/bin/$<TARGET_FILE_NAME:tests>
-    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${CMAKE_BINARY_DIR}/html ${CMAKE_BINARY_DIR}/upload/doxygen
-
+    package_for_upload ALL
+    COMMAND ${CMAKE_COMMAND} -E copy_directory_if_different ${CMAKE_CURRENT_SOURCE_DIR}/resources ${OUTPUT_DIR}/resources
 )
 
 # ======================================== CTest ============================================

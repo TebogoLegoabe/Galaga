@@ -58,60 +58,9 @@ void Game::updateGame()
         inMenu = true;       // Switch back to menu state
         gameStarted = false; // Game has not started
         menu.reset();        // Reset the menu state
-        bullets.clear();
-        enemies.clear();
         return;
     }
-
-    // update player and spawn bullets
-    player.update(bullets);
-
-    // update bullets
-    for (auto &b : bullets)
-        b.update();
-    bullets.erase(std::remove_if(bullets.begin(), bullets.end(),
-                                 [](const Bullet &b)
-                                 { return b.isOffScreen(); }),
-                  bullets.end());
-
-    // spawn enemies
-    enemySpawnTimer += GetFrameTime();
-    if (enemySpawnTimer > 1.0f)
-    {
-        float x = static_cast<float>(GetRandomValue(0, screenWidth - 20));
-        enemies.emplace_back(Vector2{x, -20.0f});
-        enemySpawnTimer = 0.0f;
-    }
-
-    // update enemies
-    for (auto &e : enemies)
-        e.update();
-    enemies.erase(std::remove_if(enemies.begin(), enemies.end(),
-                                 [](const Enemy &e)
-                                 { return e.isOffScreen(); }),
-                  enemies.end());
-
-    // handle bullet-enemy collisions
-    for (auto bulletIt = bullets.begin(); bulletIt != bullets.end();)
-    {
-        bool removedBullet = false;
-        for (auto enemyIt = enemies.begin(); enemyIt != enemies.end();)
-        {
-            if (CheckCollisionRecs(bulletIt->getRect(), enemyIt->getRect()))
-            {
-                enemyIt = enemies.erase(enemyIt);
-                bulletIt = bullets.erase(bulletIt);
-                removedBullet = true;
-                break;
-            }
-            else
-            {
-                ++enemyIt;
-            }
-        }
-        if (!removedBullet)
-            ++bulletIt;
-    }
+    // Update game elements here (e.g., player, enemies, bullets)
 }
 void Game::draw()
 {
