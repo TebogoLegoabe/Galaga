@@ -1,10 +1,3 @@
-/**
- *  @file main.cpp
- *   @brief Main entry point for the game.
- *   @details This file initializes the game window and starts the game loop.
- *    @author Your Name: Tebogo Legoabe
- *    @date 2025-06-10
- */
 #include <raylib-cpp.hpp>
 #include <iostream>
 #include "game.h"

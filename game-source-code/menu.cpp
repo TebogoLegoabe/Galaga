@@ -1,109 +1,86 @@
-#include "menu.h"
-#include <vector>
-#include <string>
+#include "Menu.h"
+#include "InputHandler.h"
 
-Menu::Menu() : currentState(MenuState::MAIN_MENU), selectedOption(0), volumeLevel(50), fullscreen(false), difficulty(1)
+Menu::Menu()
+    : currentState(MenuState::MAIN_MENU),
+      selectedOption(0),
+      gameWon(false)
 {
-    mainMenuOptions = {"Start Game", "Settings", "Instructions", "Exit"};
-    settingsOptions = {"Volume", "Fullscreen", "Difficulty", "Back to Main Menu"};
-
-    currentOptions = mainMenuOptions; // Start with main menu options
+    mainMenuOptions = {"Start Game", "Instructions", "Exit"};
+    currentOptions = mainMenuOptions;
 }
 
 void Menu::handleInput()
 {
-    // handle input for menu navigation
     switch (currentState)
     {
     case MenuState::MAIN_MENU:
         handleMainMenuInput();
         break;
-    case MenuState::SETTINGS:
-        handleSettingsInput();
-        break;
     case MenuState::INSTRUCTIONS:
         handleInstructionsInput();
         break;
-    default:
+    case MenuState::GAME_OVER:
+    case MenuState::LEVEL_COMPLETE:
+        handleGameOverInput();
+        break;
+    }
+}
+
+void Menu::update()
+{
+    // Any menu animations or updates would go here
+}
+
+void Menu::draw()
+{
+    switch (currentState)
+    {
+    case MenuState::MAIN_MENU:
+        drawMainMenu();
+        break;
+    case MenuState::INSTRUCTIONS:
+        drawInstructions();
+        break;
+    case MenuState::GAME_OVER:
+        drawGameOver();
+        break;
+    case MenuState::LEVEL_COMPLETE:
+        drawLevelComplete();
         break;
     }
 }
 
 void Menu::handleMainMenuInput()
 {
-    if (IsKeyPressed(KEY_UP))
+    if (InputHandler::isUpPressed())
     {
         selectedOption = (selectedOption - 1 + currentOptions.size()) % currentOptions.size();
     }
-    else if (IsKeyPressed(KEY_DOWN))
+    else if (InputHandler::isDownPressed())
     {
         selectedOption = (selectedOption + 1) % currentOptions.size();
     }
-    else if (IsKeyPressed(KEY_ENTER))
+    else if (InputHandler::isEnterPressed())
     {
         switch (selectedOption)
         {
         case 0: // Start Game
-            currentState = MenuState::PLAYING;
+            // This will be handled by GameStateManager
             break;
-        case 1: // Settings
-            currentState = MenuState::SETTINGS;
-            selectedOption = 0; // Reset selected option for settings
-            break;
-        case 2: // Instructions
+        case 1: // Instructions
             currentState = MenuState::INSTRUCTIONS;
             break;
-        case 3: // Exit
-            currentState = MenuState::EXIT;
+        case 2: // Exit
+            // This will be handled by GameStateManager
             break;
         }
-    }
-}
-
-void Menu::handleSettingsInput()
-{
-    if (IsKeyPressed(KEY_UP))
-    {
-        selectedOption = (selectedOption - 1 + settingsOptions.size()) % settingsOptions.size();
-    }
-    else if (IsKeyPressed(KEY_DOWN))
-    {
-        selectedOption = (selectedOption + 1) % settingsOptions.size();
-    }
-    else if (IsKeyPressed(KEY_ENTER))
-    {
-        switch (selectedOption)
-        {
-        case 0:                                     // Volume
-            volumeLevel = (volumeLevel + 25) % 110; // Cycle through volume levels
-            if (volumeLevel == 100)
-                volumeLevel = 0; // Reset to 0 after 100
-            break;
-        case 1: // Fullscreen
-            fullscreen = !fullscreen;
-            settingsOptions[1] = "Fullscreen: " + std::string(fullscreen ? "On" : "Off");
-            break;
-        case 2:                                // Difficulty
-            difficulty = (difficulty + 1) % 3; // Cycle through difficulties: 0, 1, 2
-            settingsOptions[2] = "Difficulty: " + std::to_string(difficulty);
-            break;
-        case 3: // Back to Main Menu
-            currentState = MenuState::MAIN_MENU;
-            selectedOption = 0; // Reset selected option for main menu
-            break;
-        }
-    }
-    else if (IsKeyPressed(KEY_ESCAPE))
-    {
-        currentState = MenuState::MAIN_MENU; // Go back to main menu
-        selectedOption = 0;                  // Reset selected option for main menu
-        updateCurrentOptions();              // Update current options to main menu
     }
 }
 
 void Menu::handleInstructionsInput()
 {
-    if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_ESCAPE))
+    if (InputHandler::isEnterPressed() || InputHandler::isMenuPressed())
     {
         currentState = MenuState::MAIN_MENU;
         selectedOption = 0;
@@ -111,129 +88,161 @@ void Menu::handleInstructionsInput()
     }
 }
 
-void Menu::updateCurrentOptions()
+void Menu::handleGameOverInput()
 {
-    // Update the current options based on the current state
-    switch (currentState)
+    if (InputHandler::isEnterPressed())
     {
-    case MenuState::MAIN_MENU:
-        currentOptions = mainMenuOptions;
-        break;
-    case MenuState::SETTINGS:
-        currentOptions = settingsOptions;
-        break;
-    default:
-        currentOptions = mainMenuOptions;
-        break;
-    }
-}
-void Menu::draw()
-{
-    // clear the background
-    ClearBackground(RAYWHITE);
-
-    // Draw the current menu based on the state
-    switch (currentState)
-    {
-    case MenuState::MAIN_MENU:
-        drawMainMenu();
-        break;
-    case MenuState::SETTINGS:
-        drawSettings();
-        break;
-    case MenuState::INSTRUCTIONS:
-        drawInstructions();
-        break;
-    default:
-        drawMainMenu();
+        reset();
     }
 }
 
 void Menu::drawMainMenu()
 {
-    int screenWidth = GetScreenWidth();
-    int screenHeight = GetScreenHeight();
+    drawTitle("DIG DUG", 60, ORANGE);
 
-    // Draw the main menu options
-    const char *title = "GALAGA GAME";
-    int titleWidth = MeasureText(title, 60);
-    DrawText(title, (screenWidth - titleWidth) / 2, screenHeight / 4, 60, DARKBLUE);
-
-    const char *subtitle = "Main Menu";
+    const char *subtitle = "Underground Adventure";
     int subtitleWidth = MeasureText(subtitle, 30);
-    DrawText(subtitle, (screenWidth - subtitleWidth) / 2, screenHeight / 4 + 50, 30, DARKGRAY);
+    DrawText(subtitle, (GetScreenWidth() - subtitleWidth) / 2,
+             GetScreenHeight() / 4 + 70, 30, DARKGRAY);
 
-    // Draw menu options
-    for (size_t i = 0; i < currentOptions.size(); ++i)
-    {
-        Color color = (i == selectedOption) ? DARKBLUE : DARKGRAY; // Highlight selected option
-        int textWidth = MeasureText(currentOptions[i].c_str(), 20);
-        DrawText(currentOptions[i].c_str(), (screenWidth - textWidth) / 2, screenHeight / 2 + i * 30, 20, color);
-    }
-    // Draw instructions
-    const char *instructions = "Use UP/DOWN to navigate, ENTER to select, ESC to go back.";
-    int instructionsWidth = MeasureText(instructions, 25);
-    DrawText(instructions, (screenWidth - instructionsWidth) / 2, screenHeight - 50, 25, DARKGRAY);
-}
-
-void Menu::drawSettings()
-{
-    int screenWidth = GetScreenWidth();
-    int screenHeight = GetScreenHeight();
-
-    // Draw the settings options
-    const char *title = "Settings";
-    int titleWidth = MeasureText(title, 40);
-    DrawText(title, (screenWidth - titleWidth) / 2, screenHeight / 4, 40, DARKBLUE);
-
-    // Draw settings options
-    for (size_t i = 0; i < currentOptions.size(); ++i)
-    {
-        Color color = (i == selectedOption) ? DARKBLUE : DARKGRAY; // Highlight selected option
-        int textWidth = MeasureText(currentOptions[i].c_str(), 20);
-        DrawText(currentOptions[i].c_str(), (screenWidth - textWidth) / 2, screenHeight / 2 + i * 30, 20, color);
-    }
-
-    // Draw instructions
-    const char *instructions = "Use UP/DOWN to navigate, ENTER to select, ESC to go back.";
-    int instructionsWidth = MeasureText(instructions, 15);
-    DrawText(instructions, (screenWidth - instructionsWidth) / 2, screenHeight - 50, 15, DARKGRAY);
+    drawOptions();
+    drawControls();
 }
 
 void Menu::drawInstructions()
 {
-    int screenWidth = GetScreenWidth();
-    int screenHeight = GetScreenHeight();
+    drawTitle("HOW TO PLAY", 40, ORANGE);
 
-    // Draw instructions title
-    const char *title = "HOW TO PLAY";
-    int titleWidth = MeasureText(title, 40);
-    DrawText(title, (screenWidth - titleWidth) / 2, 50, 40, DARKBLUE);
-    // Draw instructions text
-    const char *instructions = "Use arrow keys to move your ship.\n"
-                               "Press SPACE to shoot.\n"
-                               "Avoid enemy ships and their bullets.\n"
-                               "Collect power-ups to enhance your ship.\n"
-                               "Defeat the boss to win the game!";
-    int instructionsWidth = MeasureText(instructions, 20);
-    DrawText(instructions, (screenWidth - instructionsWidth) / 2, screenHeight / 4, 20, DARKGRAY);
+    int screenWidth = GetScreenWidth();
+    int startY = GetScreenHeight() / 4 + 50;
+    int lineHeight = 25;
+
+    std::vector<std::string> instructions = {
+        "- Use ARROW KEYS or WASD to move Dig Dug",
+        "- Dig tunnels by moving through the earth",
+        "- Press SPACE to shoot your harpoon at monsters",
+        "- Avoid colliding with red monsters",
+        "- Destroy all monsters to win the level!",
+        "- Don't let falling rocks crush you",
+        "",
+        "Press ENTER or ESC to return to main menu"};
+
+    for (size_t i = 0; i < instructions.size(); ++i)
+    {
+        int textWidth = MeasureText(instructions[i].c_str(), 20);
+        DrawText(instructions[i].c_str(),
+                 (screenWidth - textWidth) / 2,
+                 startY + i * lineHeight, 20, DARKGRAY);
+    }
 }
 
-MenuState Menu::getState() const
+void Menu::drawGameOver()
+{
+    if (gameWon)
+    {
+        drawTitle("LEVEL COMPLETE!", 50, GREEN);
+        const char *message = "Congratulations! You defeated all the monsters!";
+        int messageWidth = MeasureText(message, 25);
+        DrawText(message, (GetScreenWidth() - messageWidth) / 2,
+                 GetScreenHeight() / 2, 25, DARKGREEN);
+    }
+    else
+    {
+        drawTitle("GAME OVER", 50, RED);
+        const char *message = "You were defeated! Try again?";
+        int messageWidth = MeasureText(message, 25);
+        DrawText(message, (GetScreenWidth() - messageWidth) / 2,
+                 GetScreenHeight() / 2, 25, DARKGRAY);
+    }
+
+    const char *instruction = "Press ENTER to return to main menu";
+    int instructionWidth = MeasureText(instruction, 20);
+    DrawText(instruction, (GetScreenWidth() - instructionWidth) / 2,
+             GetScreenHeight() / 2 + 50, 20, GRAY);
+}
+
+void Menu::drawLevelComplete()
+{
+    drawGameOver(); // Same as game over but with won = true
+}
+
+void Menu::drawTitle(const char *title, int fontSize, Color color)
+{
+    int titleWidth = MeasureText(title, fontSize);
+    DrawText(title, (GetScreenWidth() - titleWidth) / 2,
+             GetScreenHeight() / 4, fontSize, color);
+}
+
+void Menu::drawOptions()
+{
+    int startY = GetScreenHeight() / 2;
+
+    for (size_t i = 0; i < currentOptions.size(); ++i)
+    {
+        Color color = (i == selectedOption) ? ORANGE : DARKGRAY;
+        int textWidth = MeasureText(currentOptions[i].c_str(), 25);
+        DrawText(currentOptions[i].c_str(),
+                 (GetScreenWidth() - textWidth) / 2,
+                 startY + i * 40, 25, color);
+    }
+}
+
+void Menu::drawControls()
+{
+    const char *controls = "Use UP/DOWN arrows to navigate, ENTER to select";
+    int controlsWidth = MeasureText(controls, 18);
+    DrawText(controls, (GetScreenWidth() - controlsWidth) / 2,
+             GetScreenHeight() - 50, 18, GRAY);
+}
+
+void Menu::updateCurrentOptions()
+{
+    switch (currentState)
+    {
+    case MenuState::MAIN_MENU:
+        currentOptions = mainMenuOptions;
+        break;
+    default:
+        currentOptions = mainMenuOptions;
+        break;
+    }
+}
+
+MenuState Menu::getMenuState() const
 {
     return currentState;
 }
+
 bool Menu::shouldStartGame() const
 {
-    return currentState == MenuState::PLAYING;
+    return currentState == MenuState::MAIN_MENU &&
+           selectedOption == 0 &&
+           InputHandler::isEnterPressed();
 }
+
 bool Menu::shouldExitGame() const
 {
-    return currentState == MenuState::EXIT;
+    return currentState == MenuState::MAIN_MENU &&
+           selectedOption == 2 &&
+           InputHandler::isEnterPressed();
 }
+
 void Menu::reset()
 {
     currentState = MenuState::MAIN_MENU;
     selectedOption = 0;
+    gameWon = false;
     updateCurrentOptions();
+}
+
+void Menu::setGameOver(bool playerWon)
+{
+    currentState = MenuState::GAME_OVER;
+    gameWon = playerWon;
+}
+
+void Menu::setLevelComplete()
+{
+    currentState = MenuState::LEVEL_COMPLETE;
+    gameWon = true;
 }

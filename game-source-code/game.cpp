@@ -1,111 +1,80 @@
-#include "game.h"
-#include <algorithm>
+#include "Game.h"
 #include <iostream>
 
-Game::Game() : isRunning(true), screenWidth(900), screenHeight(700),
-               window(screenWidth, screenHeight, "Game Window"), menu(), inMenu(true),
-               gameStarted(false) {}
+Game::Game()
+    : isRunning(true),
+      window(SCREEN_WIDTH, SCREEN_HEIGHT, "Dig Dug - Underground Adventure"),
+      stateManager()
+{
+}
+
+Game::~Game()
+{
+    cleanup();
+}
 
 void Game::init()
 {
-    // Set the exit key to ESC
-    SetExitKey(KEY_ESCAPE);
+    // Set the exit key to none (we'll handle it manually)
+    SetExitKey(0);
 
-    // Set the target FPS (frames per second)
+    // Set the target FPS
     window.SetTargetFPS(60);
-}
 
-void Game::update()
-{
-    // Check for exit condition
-    if (WindowShouldClose())
-    {
-        isRunning = false;
-        return; // Exit the game loop
-    }
-    // Update game state based on the current menu state
-    if (inMenu)
-    {
-        updateMenu();
-    }
-    else
-    {
-        updateGame();
-    }
-}
+    // Initialize the state manager
+    stateManager.init();
 
-void Game::updateMenu()
-{
-    // Handle menu input
-    menu.handleInput();
-
-    // Check if the game should start or exit
-    if (menu.shouldStartGame())
-    {
-        inMenu = false;     // Switch to game state
-        gameStarted = true; // Game has started
-    }
-    else if (menu.shouldExitGame())
-    {
-        isRunning = false; // Exit the game
-    }
-}
-void Game::updateGame()
-{
-    // press ESC to return to the menu
-    if (IsKeyPressed(KEY_ESCAPE))
-    {
-        inMenu = true;       // Switch back to menu state
-        gameStarted = false; // Game has not started
-        menu.reset();        // Reset the menu state
-        return;
-    }
-    // Update game elements here (e.g., player, enemies, bullets)
-}
-void Game::draw()
-{
-    // Begin drawing
-    BeginDrawing();
-
-    if (inMenu)
-    {
-        drawMenu(); // Draw the menu
-    }
-    else
-    {
-        drawGame(); // Draw the game
-    }
-    // End drawing
-    EndDrawing();
-}
-
-void Game::drawMenu()
-{
-    // Draw the menu
-    menu.draw();
-}
-
-void Game::drawGame()
-{
-    // Draw the game elements
-    ClearBackground(BLUE); // Clear the screen with a blue background
-
-    // For now, we will just draw a simple message
-    const char *message = "Game is running... Press ESC to return to menu";
-    int textWidth = MeasureText(message, 20);
-    DrawText(message, (screenWidth - textWidth) / 2, screenHeight / 2, 20, DARKGRAY);
+    std::cout << "Game initialized successfully!" << std::endl;
 }
 
 void Game::run()
 {
-    init(); // Initialize the game
+    init();
 
-    while (isRunning)
+    while (isRunning && !WindowShouldClose())
     {
-        update(); // Update game  state
-        draw();   // Draw the game
+        handleWindowEvents();
+        update();
+        draw();
     }
 
-    // Close the game window
-    CloseWindow();
+    cleanup();
+}
+
+void Game::update()
+{
+    // Update the current game state
+    stateManager.update();
+
+    // Check if we should exit the game
+    if (stateManager.shouldExit())
+    {
+        isRunning = false;
+    }
+}
+
+void Game::draw()
+{
+    BeginDrawing();
+    ClearBackground(DARKBROWN); // Earth-like background color
+
+    // Draw the current state
+    stateManager.draw();
+
+    EndDrawing();
+}
+
+void Game::handleWindowEvents()
+{
+    // Handle any window-specific events here if needed
+    if (WindowShouldClose())
+    {
+        isRunning = false;
+    }
+}
+
+void Game::cleanup()
+{
+    // Any cleanup code will go here
+    std::cout << "Game cleanup completed." << std::endl;
 }

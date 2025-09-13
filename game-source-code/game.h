@@ -2,57 +2,61 @@
 #define GAME_H
 
 #include <raylib-cpp.hpp>
-#include <vector>
-
-#include "menu.h"
+#include "GameStateManager.h"
 
 /**
- *  @brief main game loop and initialize the window.
- *
+ * @brief Main game class that manages the window and game loop
  */
 class Game
 {
 public:
     /**
-     * @brief Default constructor for the Game class.
+     * @brief Default constructor for the Game class
      */
     Game();
+
     /**
-     * @brief Initializes the game resources and window.
+     * @brief Destructor
+     */
+    ~Game();
+
+    /**
+     * @brief Initializes the game resources and window
      */
     void init();
+
     /**
-     * @brief Updates the game state.
-     */
-    void update();
-    /**
-     * @brief Draws the game elements on the screen.
-     */
-    void draw();
-    /**
-     * @brief Runs the main game loop.
+     * @brief Runs the main game loop
      */
     void run();
 
+    /**
+     * @brief Updates the game state
+     */
+    void update();
+
+    /**
+     * @brief Draws the game elements on the screen
+     */
+    void draw();
+
+    /**
+     * @brief Cleanup resources
+     */
+    void cleanup();
+
 private:
-    bool isRunning = true; // Indicates if the game is running
-    // Screen dimensions
-    int screenWidth = 900;
-    int screenHeight = 700;
-    raylib::Window window; // member variable for the window
+    static const int SCREEN_WIDTH = 900;
+    static const int SCREEN_HEIGHT = 700;
 
-    // Game states
-    Menu menu;                // Instance of the Menu class to handle the game menu
-    bool inMenu = true;       // Indicates if the game is in the menu state
-    bool gameStarted = false; // Indicates if the game has started
+    bool isRunning;                // Indicates if the game is running
+    raylib::Window window;         // Game window
+    GameStateManager stateManager; // Manages game states
 
-    // Gameplay entities
-
-    // methods for handling game states
-    void updateMenu();
-    void updateGame();
-    void drawMenu();
-    void drawGame();
+    /**
+     * @brief Handle window events
+     */
+    void handleWindowEvents();
 };
 
 #endif // GAME_H
