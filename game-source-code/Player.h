@@ -81,23 +81,8 @@ private:
     Vector2 targetPosition;    // Target position for smooth movement
     bool isMoving;             // Whether the player is currently moving
 
-    /**
-     * @brief Update smooth movement towards target
-     */
     void updateMovement();
-
-    /**
-     * @brief Dig a tunnel at the player's current position
-     * @param grid Reference to the game grid
-     */
     void digAtCurrentPosition(Grid &grid);
-
-    /**
-     * @brief Check if a world position is within valid bounds
-     * @param worldPos Position to check
-     * @param grid Reference to the game grid
-     * @return true if within bounds
-     */
     bool isWithinGridBounds(Vector2 worldPos, const Grid &grid) const;
 };
 

@@ -84,19 +84,8 @@ private:
     bool levelComplete; // Level complete flag
     bool playerWon;     // Player won flag
 
-    /**
-     * @brief Update game logic
-     */
     void updateGameLogic();
-
-    /**
-     * @brief Draw the HUD (heads-up display)
-     */
     void drawHUD();
-
-    /**
-     * @brief Handle player movement input
-     */
     void handlePlayerMovement();
 };
 
