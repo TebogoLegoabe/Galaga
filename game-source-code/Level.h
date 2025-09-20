@@ -72,10 +72,10 @@ public:
     bool isWithinBounds(Vector2 worldPos) const;
 
 private:
-    Grid grid;                                  // The level's grid
-    Vector2 playerStartPosition;                // Player starting position
-    std::vector<Vector2> monsterSpawnPositions; // Monster spawn positions
-    std::vector<Vector2> rockPositions;         // Rock positions
+    Grid grid;                                  ///< The level's grid
+    Vector2 playerStartPosition;                ///< Player starting position
+    std::vector<Vector2> monsterSpawnPositions; ///< Monster spawn positions
+    std::vector<Vector2> rockPositions;         ///< Rock positions
 
     /**
      * @brief Create some initial tunnels for the level

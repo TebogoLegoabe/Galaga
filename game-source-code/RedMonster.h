@@ -33,8 +33,8 @@ public:
     void updateAI(Vector2 playerPos, Grid &grid);
 
 private:
-    float aiUpdateTimer;                   ///< Timer for AI decision updates
-    static const float AI_UPDATE_INTERVAL; ///< How often to update AI (seconds)
+    float aiUpdateTimer;                   // Timer for AI decision updates
+    static const float AI_UPDATE_INTERVAL; // How often to update AI (seconds)
 
     /**
      * @brief Choose next direction based on AI

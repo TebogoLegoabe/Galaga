@@ -66,48 +66,89 @@ bool Level::isWithinBounds(Vector2 worldPos) const
 
 void Level::createInitialTunnels()
 {
-    // Create a horizontal tunnel near the top for the player to start in
-    int startY = 2;
-    for (int x = 10; x < 18; x++)
+    // Create horizontal tunnel at top where player starts
+    int topTunnelY = 2;
+    for (int x = 12; x < 18; x++)
     {
-        grid.digTunnel(x, startY);
+        grid.digTunnel(x, topTunnelY);
     }
 
-    // Create some vertical tunnels
-    for (int y = 5; y < 10; y++)
+    // Create vertical tunnels connecting different levels
+    // Left vertical tunnel
+    for (int y = 2; y < 18; y++)
     {
-        grid.digTunnel(5, y);
-        grid.digTunnel(14, y);
-        grid.digTunnel(22, y);
+        grid.digTunnel(15, y);
     }
 
-    // Create some horizontal connecting tunnels
-    for (int x = 5; x < 15; x++)
+    // Center-left vertical tunnel
+    for (int y = 3; y < 20; y++)
     {
-        grid.digTunnel(x, 8);
-    }
-    for (int x = 14; x < 23; x++)
-    {
-        grid.digTunnel(x, 12);
+        // grid.digTunnel(8, y);
     }
 
-    // Create bottom area tunnels
+    // Center-right vertical tunnel
+    for (int y = 8; y < 18; y++)
+    {
+        // grid.digTunnel(19, y);
+    }
+
+    // Right vertical tunnel
+    for (int y = 12; y < 19; y++)
+    {
+        // grid.digTunnel(24, y);
+    }
+
+    // Create horizontal tunnels at different depths
+    // Second level horizontal tunnel (left)
+    for (int x = 3; x < 9; x++)
+    {
+        // grid.digTunnel(x, 8);
+    }
+
+    // Second level horizontal tunnel (right)
+    for (int x = 15; x < 22; x++)
+    {
+        // grid.digTunnel(x, 11);
+    }
+
+    // Third level horizontal tunnel (left)
+    for (int x = 1; x < 9; x++)
+    {
+        // grid.digTunnel(x, 15);
+    }
+
+    // Third level horizontal tunnel (right)
+    for (int x = 19; x < 26; x++)
+    {
+        grid.digTunnel(x, 15);
+    }
+
+    // Bottom level horizontal tunnel
     for (int x = 8; x < 20; x++)
     {
-        grid.digTunnel(x, 18);
+        grid.digTunnel(x, 19);
     }
 }
 
 void Level::placeRocks()
 {
-    // Place some rocks in strategic positions
+    // Place rocks in strategic positions that can fall and crush monsters
     std::vector<Vector2> rockGridPositions = {
-        {7, 7}, {16, 7}, {12, 11}, {18, 15}, {6, 15}};
+        /*{12, 6},  // Above center area
+        {6, 10},  // Left side
+        {21, 9},  // Right side
+        {10, 13}, // Mid-left
+        {16, 14}, // Mid-right
+        {13, 17}, // Above bottom tunnel
+        {25, 13}, // Far right
+        {2, 12}   // Far left */
+    };
 
     for (const auto &gridPos : rockGridPositions)
     {
         int x = static_cast<int>(gridPos.x);
         int y = static_cast<int>(gridPos.y);
+
         grid.setTile(x, y, TileType::ROCK);
         rockPositions.push_back(grid.gridToWorld(x, y));
     }

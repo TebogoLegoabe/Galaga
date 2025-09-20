@@ -4,7 +4,7 @@
 Player::Player(Vector2 startPos)
     : GameObject(startPos, {28, 28}),
       facingDirection(Direction::RIGHT),
-      speed(2.0f),
+      speed(2.5f),
       targetPosition(startPos),
       isMoving(false),
       harpoon(startPos, Direction::RIGHT)

@@ -4,7 +4,7 @@
 Monster::Monster(Vector2 startPos)
     : GameObject(startPos, {28, 28}),
       state(MonsterState::IN_TUNNEL),
-      speed(1.0f),
+      speed(0.5f),
       targetPosition(startPos),
       lastPosition(startPos),
       moveTimer(0.0f)

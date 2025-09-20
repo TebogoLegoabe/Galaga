@@ -65,20 +65,51 @@ public:
      */
     Vector2 worldToGrid(Vector2 worldPos) const;
 
+    /**
+     * @brief Convert grid coordinates to world position
+     * @param gridX Grid x coordinate
+     * @param gridY Grid y coordinate
+     * @return World position in pixels
+     */
     Vector2 gridToWorld(int gridX, int gridY) const;
 
+    /**
+     * @brief Get the width of the grid
+     * @return Grid width in tiles
+     */
     int getWidth() const;
 
+    /**
+     * @brief Get the height of the grid
+     * @return Grid height in tiles
+     */
     int getHeight() const;
+
+    /**
+     * @brief Get the tile size
+     * @return Size of each tile in pixels
+     */
     int getTileSize() const;
+
+    /**
+     * @brief Draw the grid (for debugging)
+     */
     void drawGrid() const;
+
+    /**
+     * @brief Draw all tiles
+     */
     void drawTiles() const;
 
 private:
-    int width;                                // Grid width in tiles
-    int height;                               // Grid height in tiles
-    int tileSize;                             // Size of each tile in pixels
-    std::vector<std::vector<TileType>> tiles; // 2D grid of tiles
+    int width;                                ///< Grid width in tiles
+    int height;                               ///< Grid height in tiles
+    int tileSize;                             ///< Size of each tile in pixels
+    std::vector<std::vector<TileType>> tiles; ///< 2D grid of tiles
+
+    /**
+     * @brief Initialize the grid with default earth
+     */
     void initializeGrid();
 };
 

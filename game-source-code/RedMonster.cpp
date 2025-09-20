@@ -3,12 +3,12 @@
 #include <algorithm>
 #include <random>
 
-const float RedMonster::AI_UPDATE_INTERVAL = 0.5f; // Update AI every 0.5 seconds
+const float RedMonster::AI_UPDATE_INTERVAL = 0.2f; // Faster, more independent movement
 
 RedMonster::RedMonster(Vector2 startPos)
     : Monster(startPos), aiUpdateTimer(0.0f)
 {
-    speed = 0.8f; // Slightly slower than player
+    speed = 0.1f; // Slightly slower than player
 }
 
 void RedMonster::update()
@@ -48,10 +48,10 @@ void RedMonster::updateAI(Vector2 playerPos, Grid &grid)
     {
         aiUpdateTimer = 0.0f;
 
-        // Set player as target
+        // Set player as target but allow for more independent movement
         setTargetPosition(playerPos);
 
-        // Choose direction and move
+        // Choose direction and move independently
         Direction nextDir = chooseNextDirection(grid);
         if (nextDir != Direction::NONE)
         {
