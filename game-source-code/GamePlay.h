@@ -2,8 +2,13 @@
 #define GAMEPLAY_H
 
 #include <raylib-cpp.hpp>
+#include <vector>
+#include <memory>
 #include "Level.h"
 #include "Player.h"
+#include "Monster.h"
+#include "RedMonster.h"
+#include "CollisionManager.h"
 #include "InputHandler.h"
 
 /**
@@ -77,16 +82,55 @@ public:
      */
     Level &getCurrentLevel();
 
-private:
-    Level currentLevel; // The current level
-    Player player;      // The player character
-    bool gameOver;      // Game over flag
-    bool levelComplete; // Level complete flag
-    bool playerWon;     // Player won flag
+    /**
+     * @brief Get the monsters for testing
+     * @return Reference to the monsters vector
+     */
+    const std::vector<std::unique_ptr<Monster>> &getMonsters() const;
 
+private:
+    Level currentLevel;                             ///< The current level
+    Player player;                                  ///< The player character
+    std::vector<std::unique_ptr<Monster>> monsters; ///< Game monsters
+    bool gameOver;                                  ///< Game over flag
+    bool levelComplete;                             ///< Level complete flag
+    bool playerWon;                                 ///< Player won flag
+
+    /**
+     * @brief Update game logic
+     */
     void updateGameLogic();
+
+    /**
+     * @brief Draw the HUD (heads-up display)
+     */
     void drawHUD();
+
+    /**
+     * @brief Handle player movement input
+     */
     void handlePlayerMovement();
+
+    /**
+     * @brief Initialize monsters at spawn positions
+     */
+    void initializeMonsters();
+
+    /**
+     * @brief Update all monsters
+     */
+    void updateMonsters();
+
+    /**
+     * @brief Draw all monsters
+     */
+    void drawMonsters();
+
+    /**
+     * @brief Check win condition (all monsters defeated)
+     * @return true if all monsters are dead
+     */
+    bool checkWinCondition() const;
 };
 
 #endif // GAMEPLAY_H

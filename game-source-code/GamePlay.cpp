@@ -7,7 +7,7 @@ GamePlay::GamePlay()
 
 GamePlay::~GamePlay()
 {
-    // Cleanup will be handled automatically
+    // Cleanup will be handled automatically by smart pointers
 }
 
 void GamePlay::init()
@@ -17,6 +17,9 @@ void GamePlay::init()
 
     // Initialize the player at the level's start position
     player.reset(currentLevel.getPlayerStartPosition());
+
+    // Initialize monsters
+    initializeMonsters();
 
     // Reset game state
     gameOver = false;
@@ -45,6 +48,9 @@ void GamePlay::update()
         // Update player
         player.update();
 
+        // Update monsters
+        updateMonsters();
+
         // Update game logic
         updateGameLogic();
     }
@@ -60,6 +66,9 @@ void GamePlay::draw()
 
     // Draw the player
     player.draw();
+
+    // Draw monsters
+    drawMonsters();
 
     // Draw HUD
     drawHUD();
@@ -110,12 +119,35 @@ Level &GamePlay::getCurrentLevel()
     return currentLevel;
 }
 
+const std::vector<std::unique_ptr<Monster>> &GamePlay::getMonsters() const
+{
+    return monsters;
+}
+
 void GamePlay::updateGameLogic()
 {
-    // TODO: Update monsters, collisions, etc. when those are implemented
+    // Check player-monster collisions
+    std::vector<Monster *> monsterPtrs;
+    for (const auto &monster : monsters)
+    {
+        monsterPtrs.push_back(monster.get());
+    }
 
-    // For now, check basic win condition (no monsters implemented yet)
-    // This will be expanded when we add monsters
+    if (CollisionManager::checkPlayerMonsterCollision(player, monsterPtrs))
+    {
+        // Player hit by monster - game over
+        gameOver = true;
+        playerWon = false;
+        return;
+    }
+
+    // Check win condition
+    if (checkWinCondition())
+    {
+        levelComplete = true;
+        playerWon = true;
+        gameOver = true;
+    }
 }
 
 void GamePlay::drawHUD()
@@ -124,17 +156,15 @@ void GamePlay::drawHUD()
     const char *title = "DIG DUG";
     DrawText(title, 10, 10, 20, ORANGE);
 
-    // Draw player position (for debugging)
-    Vector2 gridPos = player.getGridPosition(currentLevel.getGrid());
-    const char *posText = TextFormat("Grid Position: (%.0f, %.0f)", gridPos.x, gridPos.y);
-    DrawText(posText, 10, 35, 15, WHITE);
-
-    // Draw controls
-    const char *controls = "Use ARROW KEYS or WASD to move and dig tunnels";
-    DrawText(controls, 10, GetScreenHeight() - 45, 15, WHITE);
-
-    const char *instruction = "Press ESC to return to menu";
-    DrawText(instruction, 10, GetScreenHeight() - 25, 15, WHITE);
+    // Draw monster count
+    int aliveMonsters = 0;
+    for (const auto &monster : monsters)
+    {
+        if (monster->isActive() && monster->getState() != MonsterState::DEAD)
+            aliveMonsters++;
+    }
+    const char *monsterText = TextFormat("Monsters: %d", aliveMonsters);
+    DrawText(monsterText, 10, 35, 15, WHITE);
 }
 
 void GamePlay::handlePlayerMovement()
@@ -145,4 +175,64 @@ void GamePlay::handlePlayerMovement()
     {
         player.move(moveDirection, currentLevel.getGrid());
     }
+}
+
+void GamePlay::initializeMonsters()
+{
+    // Clear existing monsters
+    monsters.clear();
+
+    // Get monster spawn positions from level
+    std::vector<Vector2> spawnPositions = currentLevel.getMonsterSpawnPositions();
+
+    // Create red monsters at spawn positions
+    for (const Vector2 &spawnPos : spawnPositions)
+    {
+        auto monster = std::make_unique<RedMonster>(spawnPos);
+        monsters.push_back(std::move(monster));
+    }
+}
+
+void GamePlay::updateMonsters()
+{
+    Vector2 playerPos = player.getPosition();
+
+    for (auto &monster : monsters)
+    {
+        if (monster->isActive() && monster->getState() != MonsterState::DEAD)
+        {
+            // Update monster AI with player position
+            RedMonster *redMonster = dynamic_cast<RedMonster *>(monster.get());
+            if (redMonster)
+            {
+                redMonster->updateAI(playerPos, currentLevel.getGrid());
+            }
+
+            // Update monster
+            monster->update();
+        }
+    }
+}
+
+void GamePlay::drawMonsters()
+{
+    for (const auto &monster : monsters)
+    {
+        if (monster->isActive() && monster->getState() != MonsterState::DEAD)
+        {
+            monster->draw();
+        }
+    }
+}
+
+bool GamePlay::checkWinCondition() const
+{
+    for (const auto &monster : monsters)
+    {
+        if (monster->isActive() && monster->getState() != MonsterState::DEAD)
+        {
+            return false; // Still have alive monsters
+        }
+    }
+    return true; // All monsters defeated
 }
