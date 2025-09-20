@@ -7,21 +7,13 @@ GamePlay::GamePlay()
 
 GamePlay::~GamePlay()
 {
-    // Cleanup will be handled automatically by smart pointers
 }
 
 void GamePlay::init()
 {
-    // Initialize the level
     currentLevel.initializeDefault();
-
-    // Initialize the player at the level's start position
     player.reset(currentLevel.getPlayerStartPosition());
-
-    // Initialize monsters
     initializeMonsters();
-
-    // Reset game state
     gameOver = false;
     levelComplete = false;
     playerWon = false;
@@ -34,7 +26,6 @@ void GamePlay::handleInput()
         handlePlayerMovement();
     }
 
-    // Handle menu return
     if (InputHandler::isMenuPressed())
     {
         // This will be handled by GameStateManager
@@ -45,35 +36,20 @@ void GamePlay::update()
 {
     if (!gameOver && !levelComplete)
     {
-        // Update player
         player.update();
-
-        // Update monsters
         updateMonsters();
-
-        // Update game logic
         updateGameLogic();
     }
 }
 
 void GamePlay::draw()
 {
-    // Clear background
     ClearBackground(BLACK);
-
-    // Draw the level
     currentLevel.draw();
-
-    // Draw the player
     player.draw();
-
-    // Draw monsters
     drawMonsters();
-
-    // Draw HUD
     drawHUD();
 
-    // Draw game over or level complete messages if needed
     if (gameOver)
     {
         const char *message = playerWon ? "LEVEL COMPLETE!" : "GAME OVER";
@@ -126,7 +102,6 @@ const std::vector<std::unique_ptr<Monster>> &GamePlay::getMonsters() const
 
 void GamePlay::updateGameLogic()
 {
-    // Check player-monster collisions
     std::vector<Monster *> monsterPtrs;
     for (const auto &monster : monsters)
     {
@@ -135,13 +110,31 @@ void GamePlay::updateGameLogic()
 
     if (CollisionManager::checkPlayerMonsterCollision(player, monsterPtrs))
     {
-        // Player hit by monster - game over
         gameOver = true;
         playerWon = false;
         return;
     }
 
-    // Check win condition
+    Harpoon &harpoon = player.getHarpoon();
+    if (harpoon.isActive())
+    {
+        if (harpoon.getState() == HarpoonState::FLYING)
+        {
+            Monster *hitMonster = CollisionManager::checkHarpoonMonsterCollision(harpoon, monsterPtrs, currentLevel.getGrid());
+            if (hitMonster)
+            {
+                hitMonster->setState(MonsterState::DEAD);
+                harpoon.setState(HarpoonState::INFLATING);
+                harpoon.setPosition(hitMonster->getPosition());
+            }
+
+            if (CollisionManager::checkHarpoonBounds(harpoon, currentLevel.getGrid()))
+            {
+                harpoon.reset();
+            }
+        }
+    }
+
     if (checkWinCondition())
     {
         levelComplete = true;
@@ -152,11 +145,9 @@ void GamePlay::updateGameLogic()
 
 void GamePlay::drawHUD()
 {
-    // Draw basic HUD elements
     const char *title = "DIG DUG";
     DrawText(title, 10, 10, 20, ORANGE);
 
-    // Draw monster count
     int aliveMonsters = 0;
     for (const auto &monster : monsters)
     {
@@ -175,17 +166,19 @@ void GamePlay::handlePlayerMovement()
     {
         player.move(moveDirection, currentLevel.getGrid());
     }
+
+    if (InputHandler::isActionPressed())
+    {
+        player.shootHarpoon();
+    }
 }
 
 void GamePlay::initializeMonsters()
 {
-    // Clear existing monsters
     monsters.clear();
 
-    // Get monster spawn positions from level
     std::vector<Vector2> spawnPositions = currentLevel.getMonsterSpawnPositions();
 
-    // Create red monsters at spawn positions
     for (const Vector2 &spawnPos : spawnPositions)
     {
         auto monster = std::make_unique<RedMonster>(spawnPos);
@@ -201,14 +194,12 @@ void GamePlay::updateMonsters()
     {
         if (monster->isActive() && monster->getState() != MonsterState::DEAD)
         {
-            // Update monster AI with player position
             RedMonster *redMonster = dynamic_cast<RedMonster *>(monster.get());
             if (redMonster)
             {
                 redMonster->updateAI(playerPos, currentLevel.getGrid());
             }
 
-            // Update monster
             monster->update();
         }
     }
@@ -231,8 +222,8 @@ bool GamePlay::checkWinCondition() const
     {
         if (monster->isActive() && monster->getState() != MonsterState::DEAD)
         {
-            return false; // Still have alive monsters
+            return false;
         }
     }
-    return true; // All monsters defeated
+    return true;
 }

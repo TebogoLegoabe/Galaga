@@ -2,17 +2,19 @@
 #include <cmath>
 
 Player::Player(Vector2 startPos)
-    : GameObject(startPos, {28, 28}), // Slightly smaller than tile size for better fit
+    : GameObject(startPos, {28, 28}),
       facingDirection(Direction::RIGHT),
       speed(2.0f),
       targetPosition(startPos),
-      isMoving(false)
+      isMoving(false),
+      harpoon(startPos, Direction::RIGHT)
 {
 }
 
 void Player::update()
 {
     updateMovement();
+    harpoon.update();
 }
 
 void Player::draw()
@@ -20,8 +22,8 @@ void Player::draw()
     if (!active)
         return;
 
-    // Draw the Dig Dug character sprite
     Sprite::drawDigDug(position, size, facingDirection);
+    harpoon.draw();
 }
 
 bool Player::move(Direction direction, Grid &grid)
@@ -29,7 +31,6 @@ bool Player::move(Direction direction, Grid &grid)
     if (direction == Direction::NONE || isMoving)
         return false;
 
-    // Calculate new position based on direction
     Vector2 newPos = position;
     float moveDistance = static_cast<float>(grid.getTileSize());
 
@@ -51,20 +52,26 @@ bool Player::move(Direction direction, Grid &grid)
         return false;
     }
 
-    // Check if the new position is valid
     if (!canMoveTo(newPos, grid))
         return false;
 
-    // Update facing direction
     facingDirection = direction;
-
-    // Set target position and start moving
     targetPosition = newPos;
     isMoving = true;
 
-    // Dig tunnel at the new position
     Vector2 gridPos = grid.worldToGrid(newPos);
     grid.digTunnel(static_cast<int>(gridPos.x), static_cast<int>(gridPos.y));
+
+    return true;
+}
+
+bool Player::shootHarpoon()
+{
+    if (!canShoot())
+        return false;
+
+    Vector2 harpoonStart = getHarpoonStartPosition();
+    harpoon.fire(harpoonStart, facingDirection);
 
     return true;
 }
@@ -74,22 +81,28 @@ Direction Player::getFacingDirection() const
     return facingDirection;
 }
 
+Harpoon &Player::getHarpoon()
+{
+    return harpoon;
+}
+
+const Harpoon &Player::getHarpoon() const
+{
+    return harpoon;
+}
+
 bool Player::canMoveTo(Vector2 newPos, const Grid &grid) const
 {
-    // Check if within grid bounds
     if (!isWithinGridBounds(newPos, grid))
         return false;
 
-    // Convert to grid coordinates
     Vector2 gridPos = grid.worldToGrid(newPos);
     int gridX = static_cast<int>(gridPos.x);
     int gridY = static_cast<int>(gridPos.y);
 
-    // Check if the grid position is valid
     if (!grid.isValidPosition(gridX, gridY))
         return false;
 
-    // Player can move through earth (will dig) and tunnels, but not rocks
     TileType tileType = grid.getTile(gridX, gridY);
     return tileType != TileType::ROCK;
 }
@@ -106,6 +119,7 @@ void Player::reset(Vector2 startPos)
     facingDirection = Direction::RIGHT;
     isMoving = false;
     active = true;
+    harpoon.reset();
 }
 
 float Player::getSpeed() const
@@ -118,25 +132,27 @@ void Player::setSpeed(float newSpeed)
     speed = newSpeed;
 }
 
+bool Player::canShoot() const
+{
+    return harpoon.getState() == HarpoonState::INACTIVE;
+}
+
 void Player::updateMovement()
 {
     if (!isMoving)
         return;
 
-    // Calculate distance to target
     float dx = targetPosition.x - position.x;
     float dy = targetPosition.y - position.y;
     float distance = std::sqrt(dx * dx + dy * dy);
 
     if (distance <= speed)
     {
-        // Reached target
         position = targetPosition;
         isMoving = false;
     }
     else
     {
-        // Move towards target
         position.x += (dx / distance) * speed;
         position.y += (dy / distance) * speed;
     }
@@ -154,4 +170,33 @@ bool Player::isWithinGridBounds(Vector2 worldPos, const Grid &grid) const
            worldPos.y >= 0 &&
            worldPos.x + size.x <= grid.getWidth() * grid.getTileSize() &&
            worldPos.y + size.y <= grid.getHeight() * grid.getTileSize();
+}
+
+Vector2 Player::getHarpoonStartPosition() const
+{
+    Vector2 startPos = position;
+
+    switch (facingDirection)
+    {
+    case Direction::UP:
+        startPos.y -= 8;
+        startPos.x += size.x / 2;
+        break;
+    case Direction::DOWN:
+        startPos.y += size.y + 4;
+        startPos.x += size.x / 2;
+        break;
+    case Direction::LEFT:
+        startPos.x -= 8;
+        startPos.y += size.y / 2;
+        break;
+    case Direction::RIGHT:
+        startPos.x += size.x + 4;
+        startPos.y += size.y / 2;
+        break;
+    default:
+        break;
+    }
+
+    return startPos;
 }

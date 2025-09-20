@@ -23,6 +23,38 @@ bool CollisionManager::checkPlayerMonsterCollision(const Player &player,
     return false;
 }
 
+Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon,
+                                                        const std::vector<Monster *> &monsters,
+                                                        const Grid &grid)
+{
+    if (!harpoon.isActive() || harpoon.getState() != HarpoonState::FLYING)
+        return nullptr;
+
+    Rectangle harpoonBounds = harpoon.getBounds();
+
+    for (Monster *monster : monsters)
+    {
+        if (monster && monster->isActive() && monster->getState() != MonsterState::DEAD)
+        {
+            Rectangle monsterBounds = monster->getBounds();
+            if (checkRectangleCollision(harpoonBounds, monsterBounds))
+            {
+                return monster;
+            }
+        }
+    }
+
+    return nullptr;
+}
+
+bool CollisionManager::checkHarpoonBounds(const Harpoon &harpoon, const Grid &grid)
+{
+    if (!harpoon.isActive())
+        return false;
+
+    return !harpoon.isWithinBounds(grid);
+}
+
 bool CollisionManager::checkCollision(const GameObject &obj1, const GameObject &obj2)
 {
     if (!obj1.isActive() || !obj2.isActive())
