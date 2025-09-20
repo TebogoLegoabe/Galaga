@@ -247,19 +247,6 @@ void GamePlay::drawHUD()
     const char *harpoonStatus = player.canShoot() ? "Harpoon Ready" : "Harpoon Fired";
     Color harpoonColor = player.canShoot() ? GREEN : RED;
     DrawText(harpoonStatus, 10, 75, 15, harpoonColor);
-
-    // Draw controls
-    const char *controls = "Use ARROW KEYS or WASD to move and dig tunnels";
-    DrawText(controls, 10, GetScreenHeight() - 85, 15, WHITE);
-
-    const char *shootInfo = "Press SPACE to shoot harpoon at monsters";
-    DrawText(shootInfo, 10, GetScreenHeight() - 65, 15, WHITE);
-
-    const char *instruction = "Press ESC to return to menu";
-    DrawText(instruction, 10, GetScreenHeight() - 45, 15, WHITE);
-
-    const char *objective = "Destroy all monsters to win!";
-    DrawText(objective, 10, GetScreenHeight() - 25, 15, YELLOW);
 }
 
 void GamePlay::handlePlayerMovement()
