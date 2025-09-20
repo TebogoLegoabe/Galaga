@@ -1,45 +1,42 @@
 #include "CollisionManager.h"
 
-bool CollisionManager::checkPlayerMonsterCollision(const Player &player,
-                                                   const std::vector<Monster *> &monsters)
+Monster *CollisionManager::checkPlayerMonsterCollision(const Player &player, const std::vector<std::unique_ptr<Monster>> &monsters)
 {
     if (!player.isActive())
-        return false;
+        return nullptr;
 
     Rectangle playerBounds = player.getBounds();
 
-    for (const Monster *monster : monsters)
+    for (const auto &monster : monsters)
     {
-        if (monster && monster->isActive() && monster->getState() != MonsterState::DEAD)
+        if (monster && monster->isActive() && !monster->isDead())
         {
             Rectangle monsterBounds = monster->getBounds();
-            if (checkRectangleCollision(playerBounds, monsterBounds))
+            if (CheckCollisionRecs(playerBounds, monsterBounds))
             {
-                return true;
+                return monster.get();
             }
         }
     }
 
-    return false;
+    return nullptr;
 }
 
-Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon,
-                                                        const std::vector<Monster *> &monsters,
-                                                        const Grid &grid)
+Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon, const std::vector<std::unique_ptr<Monster>> &monsters, const Grid &grid)
 {
-    if (!harpoon.isActive() || harpoon.getState() != HarpoonState::FLYING)
+    if (!harpoon.isHarpoonActive())
         return nullptr;
 
     Rectangle harpoonBounds = harpoon.getBounds();
 
-    for (Monster *monster : monsters)
+    for (const auto &monster : monsters)
     {
-        if (monster && monster->isActive() && monster->getState() != MonsterState::DEAD)
+        if (monster && monster->isActive() && !monster->isDead())
         {
             Rectangle monsterBounds = monster->getBounds();
-            if (checkRectangleCollision(harpoonBounds, monsterBounds))
+            if (CheckCollisionRecs(harpoonBounds, monsterBounds))
             {
-                return monster;
+                return monster.get();
             }
         }
     }
@@ -49,27 +46,54 @@ Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon,
 
 bool CollisionManager::checkHarpoonBounds(const Harpoon &harpoon, const Grid &grid)
 {
-    if (!harpoon.isActive())
+    if (!harpoon.isHarpoonActive())
         return false;
 
-    return !harpoon.isWithinBounds(grid);
+    // Use the existing hasReachedMaxRange method
+    return harpoon.hasReachedMaxRange(grid);
 }
 
-bool CollisionManager::checkCollision(const GameObject &obj1, const GameObject &obj2)
+// Overloaded methods for raw pointer vectors
+Monster *CollisionManager::checkPlayerMonsterCollision(const Player &player, const std::vector<Monster *> &monsters)
 {
-    if (!obj1.isActive() || !obj2.isActive())
-        return false;
+    if (!player.isActive())
+        return nullptr;
 
-    Rectangle bounds1 = obj1.getBounds();
-    Rectangle bounds2 = obj2.getBounds();
+    Rectangle playerBounds = player.getBounds();
 
-    return checkRectangleCollision(bounds1, bounds2);
+    for (Monster *monster : monsters)
+    {
+        if (monster && monster->isActive() && !monster->isDead())
+        {
+            Rectangle monsterBounds = monster->getBounds();
+            if (CheckCollisionRecs(playerBounds, monsterBounds))
+            {
+                return monster;
+            }
+        }
+    }
+
+    return nullptr;
 }
 
-bool CollisionManager::checkRectangleCollision(const Rectangle &rect1, const Rectangle &rect2)
+Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon, const std::vector<Monster *> &monsters, const Grid &grid)
 {
-    return (rect1.x < rect2.x + rect2.width &&
-            rect1.x + rect1.width > rect2.x &&
-            rect1.y < rect2.y + rect2.height &&
-            rect1.y + rect1.height > rect2.y);
+    if (!harpoon.isHarpoonActive())
+        return nullptr;
+
+    Rectangle harpoonBounds = harpoon.getBounds();
+
+    for (Monster *monster : monsters)
+    {
+        if (monster && monster->isActive() && !monster->isDead())
+        {
+            Rectangle monsterBounds = monster->getBounds();
+            if (CheckCollisionRecs(harpoonBounds, monsterBounds))
+            {
+                return monster;
+            }
+        }
+    }
+
+    return nullptr;
 }

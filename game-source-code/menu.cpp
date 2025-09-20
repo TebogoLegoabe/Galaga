@@ -121,9 +121,10 @@ void Menu::drawInstructions()
         "- Use ARROW KEYS or WASD to move Dig Dug",
         "- Dig tunnels by moving through the earth",
         "- Press SPACE to shoot your harpoon at monsters",
-        "- Avoid colliding with red monsters",
+        "- Monsters move slowly through tunnels and chase you",
+        "- Red monsters and green dragons will try to catch you",
         "- Destroy all monsters to win the level!",
-        "- Don't let falling rocks crush you",
+        "- Avoid colliding with monsters or you'll lose",
         "",
         "Press ENTER or ESC to return to main menu"};
 

@@ -7,7 +7,7 @@
 #include <raylib-cpp.hpp>
 
 /**
- * @brief Abstract base class for all monsters
+ * @brief Monster class for underground creatures
  */
 class Monster : public GameObject
 {
@@ -15,8 +15,9 @@ public:
     /**
      * @brief Constructor for Monster
      * @param startPos Starting position in world coordinates
+     * @param monsterType Type of monster (red or green)
      */
-    Monster(Vector2 startPos = {0, 0});
+    Monster(Vector2 startPos = {0, 0}, bool isGreen = false);
 
     /**
      * @brief Virtual destructor
@@ -24,37 +25,24 @@ public:
     virtual ~Monster() = default;
 
     /**
-     * @brief Update the monster (pure virtual)
+     * @brief Update the monster
      */
-    void update() override = 0;
+    virtual void update() override;
 
     /**
-     * @brief Draw the monster (pure virtual)
+     * @brief Draw the monster
      */
-    void draw() override = 0;
+    virtual void draw() override;
 
     /**
-     * @brief Move the monster in a direction
-     * @param direction Direction to move
+     * @brief Update monster AI and movement
      * @param grid Reference to the game grid
-     * @return true if movement was successful
+     * @param playerPos Player's current position
      */
-    virtual bool move(Direction direction, Grid &grid);
+    void updateAI(const Grid &grid, Vector2 playerPos);
 
     /**
-     * @brief Get the monster's current state
-     * @return Current MonsterState
-     */
-    MonsterState getState() const;
-
-    /**
-     * @brief Set the monster's state
-     * @param newState New monster state
-     */
-    void setState(MonsterState newState);
-
-    /**
-     * @brief Check if monster can move to a position
+     * @brief Check if the monster can move to a position
      * @param newPos Position to check in world coordinates
      * @param grid Reference to the game grid
      * @return true if the position is valid
@@ -69,10 +57,21 @@ public:
     Vector2 getGridPosition(const Grid &grid) const;
 
     /**
-     * @brief Reset the monster to starting position
-     * @param startPos Starting position
+     * @brief Get the monster's current state
+     * @return Current MonsterState
      */
-    virtual void reset(Vector2 startPos);
+    MonsterState getState() const;
+
+    /**
+     * @brief Kill the monster
+     */
+    void kill();
+
+    /**
+     * @brief Check if monster is dead
+     * @return true if monster is dead
+     */
+    bool isDead() const;
 
     /**
      * @brief Get the monster's speed
@@ -81,32 +80,40 @@ public:
     float getSpeed() const;
 
     /**
-     * @brief Set target position for AI movement
-     * @param target Target position in world coordinates
+     * @brief Set the monster's speed
+     * @param newSpeed New movement speed
      */
-    void setTargetPosition(Vector2 target);
+    void setSpeed(float newSpeed);
+
+    /**
+     * @brief Reset the monster to starting position and state
+     * @param startPos Starting position
+     */
+    void reset(Vector2 startPos);
+
+    /**
+     * @brief Check if this is a green dragon
+     * @return true if green dragon, false if red monster
+     */
+    bool isGreenDragon() const;
 
 protected:
-    MonsterState state;     // Current monster state
-    float speed;            // Movement speed in pixels per frame
-    Vector2 targetPosition; // Target position for AI
-    Vector2 lastPosition;   // Last valid position
-    float moveTimer;        // Timer for movement decisions
+    MonsterState state;        // Current monster state
+    Direction facingDirection; // Direction the monster is facing
+    float speed;               // Movement speed in pixels per frame
+    Vector2 targetPosition;    // Target position for smooth movement
+    bool isMoving;             // Whether the monster is currently moving
+    bool greenDragon;          // Whether this is a green dragon
+    float moveTimer;           // Timer for controlling movement frequency
+    float moveInterval;        // How often the monster tries to move (in seconds)
 
-    /**
-     * @brief Check if a world position is within valid bounds
-     * @param worldPos Position to check
-     * @param grid Reference to the game grid
-     * @return true if within bounds
-     */
+    // Protected helper methods for derived classes
+    void updateMovement();
+    Direction chooseNextDirection(const Grid &grid, Vector2 playerPos);
     bool isWithinGridBounds(Vector2 worldPos, const Grid &grid) const;
-
-    /**
-     * @brief Calculate direction to target
-     * @param target Target position
-     * @return Direction to move towards target
-     */
-    Direction getDirectionToTarget(Vector2 target) const;
+    float getDistanceToPlayer(Vector2 playerPos) const;
+    std::vector<Direction> getValidDirections(const Grid &grid) const;
+    Direction getDirectionTowardsPlayer(Vector2 playerPos) const;
 };
 
 #endif // MONSTER_H

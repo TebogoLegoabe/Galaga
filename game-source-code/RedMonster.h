@@ -4,7 +4,7 @@
 #include "Monster.h"
 
 /**
- * @brief Red monster implementation
+ * @brief Red monster class - specific type of monster
  */
 class RedMonster : public Monster
 {
@@ -26,29 +26,19 @@ public:
     void draw() override;
 
     /**
-     * @brief Update AI behavior to chase player
+     * @brief Update red monster AI and movement
      * @param playerPos Player's current position
      * @param grid Reference to the game grid
      */
     void updateAI(Vector2 playerPos, Grid &grid);
 
 private:
-    float aiUpdateTimer;                   // Timer for AI decision updates
-    static const float AI_UPDATE_INTERVAL; // How often to update AI (seconds)
-
     /**
-     * @brief Choose next direction based on AI
+     * @brief Choose next direction for red monster movement
      * @param grid Reference to the game grid
      * @return Direction to move
      */
     Direction chooseNextDirection(Grid &grid);
-
-    /**
-     * @brief Get all valid directions from current position
-     * @param grid Reference to the game grid
-     * @return Vector of valid directions
-     */
-    std::vector<Direction> getValidDirections(Grid &grid);
 };
 
 #endif // RED_MONSTER_H

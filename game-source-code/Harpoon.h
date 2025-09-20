@@ -5,20 +5,9 @@
 #include "GameEnums.h"
 #include "Grid.h"
 #include <raylib-cpp.hpp>
-#include <cmath>
 
 /**
- * @brief Enumeration for harpoon states
- */
-enum class HarpoonState
-{
-    FLYING,    ///< Harpoon is flying through the air
-    INFLATING, ///< Harpoon hit a monster and is inflating it
-    INACTIVE   ///< Harpoon is not active
-};
-
-/**
- * @brief Harpoon projectile class
+ * @brief Harpoon projectile class for Dig Dug
  */
 class Harpoon : public GameObject
 {
@@ -28,7 +17,7 @@ public:
      * @param startPos Starting position in world coordinates
      * @param direction Direction the harpoon is fired
      */
-    Harpoon(Vector2 startPos = {0, 0}, Direction direction = Direction::RIGHT);
+    Harpoon(Vector2 startPos = {0, 0}, Direction dir = Direction::RIGHT);
 
     /**
      * @brief Update the harpoon
@@ -41,23 +30,22 @@ public:
     void draw() override;
 
     /**
-     * @brief Fire the harpoon in a direction
+     * @brief Fire the harpoon
      * @param startPos Starting position
-     * @param fireDirection Direction to fire
+     * @param direction Direction to fire
      */
-    void fire(Vector2 startPos, Direction fireDirection);
+    void fire(Vector2 startPos, Direction direction);
 
     /**
-     * @brief Get the harpoon's current state
-     * @return Current HarpoonState
+     * @brief Check if harpoon is active (fired and moving)
+     * @return true if harpoon is active
      */
-    HarpoonState getState() const;
+    bool isHarpoonActive() const;
 
     /**
-     * @brief Set the harpoon's state
-     * @param newState New harpoon state
+     * @brief Stop the harpoon (hit something or max range)
      */
-    void setState(HarpoonState newState);
+    void stop();
 
     /**
      * @brief Get the direction the harpoon is traveling
@@ -66,33 +54,42 @@ public:
     Direction getDirection() const;
 
     /**
-     * @brief Check if harpoon is within grid bounds
-     * @param grid Reference to the game grid
-     * @return true if within bounds
+     * @brief Get the harpoon's speed
+     * @return Movement speed in pixels per frame
      */
-    bool isWithinBounds(const Grid &grid) const;
+    float getSpeed() const;
+
+    /**
+     * @brief Check if harpoon has reached maximum range
+     * @param grid Reference to the game grid
+     * @return true if at max range or hit obstacle
+     */
+    bool hasReachedMaxRange(const Grid &grid) const;
 
     /**
      * @brief Reset the harpoon to inactive state
      */
     void reset();
 
+    /**
+     * @brief Get if harpoon is active (public accessor)
+     * @return true if harpoon is active
+     */
+    bool getIsActive() const;
+
 private:
-    Direction direction;             ///< Direction the harpoon is traveling
-    HarpoonState state;              ///< Current harpoon state
-    float speed;                     ///< Harpoon movement speed
-    float inflateTimer;              ///< Timer for inflation process
-    static const float INFLATE_TIME; ///< Time to inflate monster (seconds)
+    Direction direction;   // Direction the harpoon is traveling
+    float speed;           // Movement speed in pixels per frame
+    Vector2 startPosition; // Starting position for range calculation
+    float maxRange;        // Maximum range in pixels
+    bool isActive;         // Whether the harpoon is currently active
 
     /**
-     * @brief Update flying movement
+     * @brief Check if harpoon can continue in current direction
+     * @param grid Reference to the game grid
+     * @return true if path is clear
      */
-    void updateFlying();
-
-    /**
-     * @brief Update inflation process
-     */
-    void updateInflating();
+    bool canContinue(const Grid &grid) const;
 };
 
 #endif // HARPOON_H

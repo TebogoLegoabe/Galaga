@@ -6,6 +6,7 @@
 #include "Grid.h"
 #include "Sprite.h"
 #include "Harpoon.h"
+#include <memory>
 #include <raylib-cpp.hpp>
 
 class Player : public GameObject

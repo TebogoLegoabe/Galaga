@@ -88,9 +88,18 @@ private:
     void placeRocks();
 
     /**
-     * @brief Set monster spawn positions
+     * @brief Set monster spawn positions (one per tunnel)
      */
     void setMonsterSpawns();
+
+    /**
+     * @brief Check if a position is in a tunnel and not occupied
+     * @param gridX Grid X coordinate
+     * @param gridY Grid Y coordinate
+     * @param existingSpawns Existing spawn positions to avoid
+     * @return true if position is suitable for monster spawn
+     */
+    bool isSuitableForMonsterSpawn(int gridX, int gridY, const std::vector<Vector2> &existingSpawns) const;
 };
 
 #endif // LEVEL_H

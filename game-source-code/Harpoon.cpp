@@ -1,112 +1,23 @@
 #include "Harpoon.h"
-
-const float Harpoon::INFLATE_TIME = 2.0f; // 2 seconds to inflate
+#include <cmath>
 
 Harpoon::Harpoon(Vector2 startPos, Direction dir)
-    : GameObject(startPos, {4, 4}), // Small harpoon size
+    : GameObject(startPos, {8, 8}), // Small harpoon size
       direction(dir),
-      state(HarpoonState::INACTIVE),
-      speed(4.0f),
-      inflateTimer(0.0f)
+      speed(4.0f), // Faster than player movement
+      startPosition(startPos),
+      maxRange(128.0f), // 4 tiles range
+      isActive(false)
 {
+    active = false; // Start inactive
 }
 
 void Harpoon::update()
 {
-    if (!active || state == HarpoonState::INACTIVE)
+    if (!isActive || !active)
         return;
 
-    switch (state)
-    {
-    case HarpoonState::FLYING:
-        updateFlying();
-        break;
-    case HarpoonState::INFLATING:
-        updateInflating();
-        break;
-    default:
-        break;
-    }
-}
-
-void Harpoon::draw()
-{
-    if (!active || state == HarpoonState::INACTIVE)
-        return;
-
-    switch (state)
-    {
-    case HarpoonState::FLYING:
-        // Draw harpoon projectile
-        DrawRectangle(position.x, position.y, size.x, size.y, YELLOW);
-        // Draw harpoon line back to origin (simple line)
-        if (direction == Direction::RIGHT)
-            DrawLine(position.x, position.y + size.y / 2, position.x - 20, position.y + size.y / 2, YELLOW);
-        else if (direction == Direction::LEFT)
-            DrawLine(position.x + size.x, position.y + size.y / 2, position.x + size.x + 20, position.y + size.y / 2, YELLOW);
-        else if (direction == Direction::UP)
-            DrawLine(position.x + size.x / 2, position.y + size.y, position.x + size.x / 2, position.y + size.y + 20, YELLOW);
-        else if (direction == Direction::DOWN)
-            DrawLine(position.x + size.x / 2, position.y, position.x + size.x / 2, position.y - 20, YELLOW);
-        break;
-    case HarpoonState::INFLATING:
-    {
-        // Draw inflating effect (pulsing circle)
-        float pulseSize = 10 + sin(inflateTimer * 5) * 5;
-        DrawCircle(position.x + size.x / 2, position.y + size.y / 2, pulseSize, Color{255, 255, 0, 128});
-        break;
-    }
-    default:
-        break;
-    }
-}
-
-void Harpoon::fire(Vector2 startPos, Direction fireDirection)
-{
-    position = startPos;
-    direction = fireDirection;
-    state = HarpoonState::FLYING;
-    active = true;
-    inflateTimer = 0.0f;
-}
-
-HarpoonState Harpoon::getState() const
-{
-    return state;
-}
-
-void Harpoon::setState(HarpoonState newState)
-{
-    state = newState;
-    if (state == HarpoonState::INFLATING)
-    {
-        inflateTimer = 0.0f;
-    }
-}
-
-Direction Harpoon::getDirection() const
-{
-    return direction;
-}
-
-bool Harpoon::isWithinBounds(const Grid &grid) const
-{
-    return position.x >= 0 &&
-           position.y >= 0 &&
-           position.x < grid.getWidth() * grid.getTileSize() &&
-           position.y < grid.getHeight() * grid.getTileSize();
-}
-
-void Harpoon::reset()
-{
-    state = HarpoonState::INACTIVE;
-    active = false;
-    inflateTimer = 0.0f;
-}
-
-void Harpoon::updateFlying()
-{
-    // Move harpoon in its direction
+    // Move in the current direction
     switch (direction)
     {
     case Direction::UP:
@@ -122,24 +33,155 @@ void Harpoon::updateFlying()
         position.x += speed;
         break;
     default:
-        break;
+        stop();
+        return;
     }
 
-    // Add timeout for flying harpoons (auto-reset after 3 seconds)
-    inflateTimer += GetFrameTime();
-    if (inflateTimer >= 3.0f)
+    // Check if we've reached maximum range
+    float dx = position.x - startPosition.x;
+    float dy = position.y - startPosition.y;
+    float distanceTraveled = std::sqrt(dx * dx + dy * dy);
+
+    if (distanceTraveled >= maxRange)
     {
-        reset();
+        stop();
     }
 }
 
-void Harpoon::updateInflating()
+void Harpoon::draw()
 {
-    inflateTimer += GetFrameTime();
+    if (!active || !isActive)
+        return;
 
-    if (inflateTimer >= INFLATE_TIME)
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+
+    // Draw harpoon based on direction
+    switch (direction)
     {
-        // Inflation complete - harpoon becomes inactive
-        reset();
+    case Direction::UP:
+    case Direction::DOWN:
+        // Vertical harpoon
+        DrawRectangle(static_cast<int>(center.x - 1), static_cast<int>(position.y),
+                      2, static_cast<int>(size.y), YELLOW);
+        DrawCircle(static_cast<int>(center.x),
+                   static_cast<int>(direction == Direction::UP ? position.y : position.y + size.y),
+                   3, ORANGE);
+        break;
+    case Direction::LEFT:
+    case Direction::RIGHT:
+        // Horizontal harpoon
+        DrawRectangle(static_cast<int>(position.x), static_cast<int>(center.y - 1),
+                      static_cast<int>(size.x), 2, YELLOW);
+        DrawCircle(static_cast<int>(direction == Direction::LEFT ? position.x : position.x + size.x),
+                   static_cast<int>(center.y), 3, ORANGE);
+        break;
+    default:
+        break;
     }
+}
+
+void Harpoon::fire(Vector2 startPos, Direction dir)
+{
+    if (isActive) // Can't fire if already active
+        return;
+
+    position = startPos;
+    startPosition = startPos;
+    direction = dir;
+    isActive = true;
+    active = true;
+}
+
+bool Harpoon::isHarpoonActive() const
+{
+    return isActive && active;
+}
+
+void Harpoon::stop()
+{
+    isActive = false;
+    active = false;
+}
+
+Direction Harpoon::getDirection() const
+{
+    return direction;
+}
+
+float Harpoon::getSpeed() const
+{
+    return speed;
+}
+
+bool Harpoon::hasReachedMaxRange(const Grid &grid) const
+{
+    if (!isActive)
+        return false;
+
+    // Check distance traveled
+    float dx = position.x - startPosition.x;
+    float dy = position.y - startPosition.y;
+    float distanceTraveled = std::sqrt(dx * dx + dy * dy);
+
+    if (distanceTraveled >= maxRange)
+        return true;
+
+    // Check if hitting a wall (earth or rock)
+    return !canContinue(grid);
+}
+
+void Harpoon::reset()
+{
+    isActive = false;
+    active = false;
+    position = startPosition;
+}
+
+bool Harpoon::canContinue(const Grid &grid) const
+{
+    // Calculate next position
+    Vector2 nextPos = position;
+
+    switch (direction)
+    {
+    case Direction::UP:
+        nextPos.y -= speed;
+        break;
+    case Direction::DOWN:
+        nextPos.y += speed;
+        break;
+    case Direction::LEFT:
+        nextPos.x -= speed;
+        break;
+    case Direction::RIGHT:
+        nextPos.x += speed;
+        break;
+    default:
+        return false;
+    }
+
+    // Check if next position is within bounds
+    if (nextPos.x < 0 || nextPos.y < 0 ||
+        nextPos.x >= grid.getWidth() * grid.getTileSize() ||
+        nextPos.y >= grid.getHeight() * grid.getTileSize())
+    {
+        return false;
+    }
+
+    // Convert to grid coordinates
+    Vector2 gridPos = grid.worldToGrid(nextPos);
+    int gridX = static_cast<int>(gridPos.x);
+    int gridY = static_cast<int>(gridPos.y);
+
+    if (!grid.isValidPosition(gridX, gridY))
+        return false;
+
+    // Harpoon can travel through tunnels and earth, but not rocks
+    TileType tileType = grid.getTile(gridX, gridY);
+    return tileType != TileType::ROCK;
+}
+
+bool Harpoon::getIsActive() const
+{
+    return isActive;
 }
