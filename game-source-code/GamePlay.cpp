@@ -1,7 +1,9 @@
 #include "GamePlay.h"
 
+const float GamePlay::DISEMBODIED_COOLDOWN_TIME = 7.0f; // 7 seconds between disembodied transitions
+
 GamePlay::GamePlay()
-    : gameOver(false), levelComplete(false), playerWon(false)
+    : gameOver(false), levelComplete(false), playerWon(false), disembodiedCooldown(0.0f)
 {
 }
 
@@ -25,6 +27,7 @@ void GamePlay::init()
     gameOver = false;
     levelComplete = false;
     playerWon = false;
+    disembodiedCooldown = 0.0f;
 }
 
 void GamePlay::handleInput()
@@ -45,6 +48,16 @@ void GamePlay::update()
 {
     if (!gameOver && !levelComplete)
     {
+        // Update disembodied cooldown timer
+        if (disembodiedCooldown > 0.0f)
+        {
+            disembodiedCooldown -= GetFrameTime();
+            if (disembodiedCooldown < 0.0f)
+            {
+                disembodiedCooldown = 0.0f;
+            }
+        }
+
         // Update player
         player.update();
 
@@ -262,8 +275,8 @@ void GamePlay::initializeMonsters()
                        }),
         monsters.end());
 
-    // Ensure we have at least 1 monster
-    if (monsters.size() < 1)
+    // Ensure we have at least 3 monsters
+    if (monsters.size() < 3)
     {
         addMonstersToDistantTunnels();
     }
@@ -278,8 +291,11 @@ void GamePlay::updateMonsters()
             // Update monster
             monster->update();
 
-            // Update monster AI to chase player
-            monster->updateAI(player, currentLevel.getGrid());
+            // Update monster AI with disembodied restrictions
+            bool canBecomeDisembodied = canMonsterBecomeDisembodied();
+            monster->updateAI(player, currentLevel.getGrid(), canBecomeDisembodied,
+                              [this]()
+                              { notifyMonsterBecameDisembodied(); });
         }
     }
 }
@@ -440,4 +456,28 @@ void GamePlay::addMonstersToDistantTunnels()
         // Remove this position so we don't spawn multiple monsters at the same spot
         distantTunnels.erase(distantTunnels.begin() + randomIndex);
     }
+}
+
+bool GamePlay::canMonsterBecomeDisembodied() const
+{
+    // Check if cooldown allows a new disembodied monster
+    if (disembodiedCooldown > 0.0f)
+        return false;
+
+    // Check if there's already a disembodied monster
+    for (const auto &monster : monsters)
+    {
+        if (monster->isActive() && monster->getState() == MonsterState::DISEMBODIED)
+        {
+            return false; // Only one disembodied monster at a time
+        }
+    }
+
+    return true;
+}
+
+void GamePlay::notifyMonsterBecameDisembodied()
+{
+    // Reset the cooldown timer when a monster becomes disembodied
+    disembodiedCooldown = DISEMBODIED_COOLDOWN_TIME;
 }

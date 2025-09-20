@@ -62,7 +62,7 @@ void Monster::draw()
     }
 }
 
-void Monster::updateAI(const Player &player, const Grid &grid)
+void Monster::updateAI(const Player &player, const Grid &grid, bool canBecomeDisembodied, std::function<void()> notifyDisembodied)
 {
     if (currentState == MonsterState::DEAD)
         return;
@@ -101,10 +101,15 @@ void Monster::updateAI(const Player &player, const Grid &grid)
             }
         }
         // If player is far and not in same tunnel, consider becoming disembodied
-        else if (shouldBecomeDisembodied(player, grid))
+        else if (canBecomeDisembodied && shouldBecomeDisembodied(player, grid))
         {
             setState(MonsterState::DISEMBODIED);
             stateTimer = 0.0f;
+            // Notify the game that this monster became disembodied
+            if (notifyDisembodied)
+            {
+                notifyDisembodied();
+            }
         }
         // Medium distance - move but not too aggressively
         else if (!isMoving && (rand() % 3 == 0)) // 33% chance to move

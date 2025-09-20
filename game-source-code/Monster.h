@@ -6,6 +6,7 @@
 #include "Grid.h"
 #include "Player.h"
 #include <raylib-cpp.hpp>
+#include <functional>
 
 /**
  * @brief Monster class for Dig Dug enemies
@@ -34,8 +35,10 @@ public:
      * @brief Update monster AI to chase the player
      * @param player Reference to the player
      * @param grid Reference to the game grid
+     * @param canBecomeDisembodied Whether the monster is allowed to become disembodied
+     * @param notifyDisembodied Callback function to notify when monster becomes disembodied
      */
-    void updateAI(const Player &player, const Grid &grid);
+    void updateAI(const Player &player, const Grid &grid, bool canBecomeDisembodied, std::function<void()> notifyDisembodied = nullptr);
 
     /**
      * @brief Move the monster in a direction

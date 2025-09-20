@@ -4,14 +4,12 @@
 #include <raylib-cpp.hpp>
 #include <vector>
 #include <memory>
+#include <algorithm>
 #include "Level.h"
 #include "Player.h"
 #include "Monster.h"
 #include "Harpoon.h"
 #include "InputHandler.h"
-#include "CollisionManager.h"
-#include "GameEnums.h"
-#include <algorithm>
 
 /**
  * @brief Manages the main gameplay state
@@ -97,6 +95,8 @@ private:
     bool gameOver;                                  // Game over flag
     bool levelComplete;                             // Level complete flag
     bool playerWon;                                 // Player won flag
+    float disembodiedCooldown;                      // Timer to prevent multiple monsters becoming disembodied at once
+    static const float DISEMBODIED_COOLDOWN_TIME;   // Cooldown duration between disembodied transitions
 
     void updateGameLogic();
     void drawHUD();
@@ -110,6 +110,8 @@ private:
     bool areAllMonstersDead() const;
     void addMonstersToEmptyTunnels(std::vector<Vector2> &spawnPositions);
     void addMonstersToDistantTunnels();
+    bool canMonsterBecomeDisembodied() const;
+    void notifyMonsterBecameDisembodied();
 };
 
 #endif // GAMEPLAY_H
