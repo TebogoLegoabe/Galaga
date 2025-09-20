@@ -7,7 +7,7 @@ Monster::Monster(Vector2 startPos, bool isGreen)
     : GameObject(startPos, {28, 28}), // Same size as player for consistency
       state(MonsterState::IN_TUNNEL),
       facingDirection(Direction::LEFT),
-      speed(0.8f), // Slower than player (player is 2.0f)
+      speed(1.7f), // Slower than player (player is 2.0f)
       targetPosition(startPos),
       isMoving(false),
       greenDragon(isGreen),
