@@ -9,6 +9,9 @@
 #include "Monster.h"
 #include "Harpoon.h"
 #include "InputHandler.h"
+#include "CollisionManager.h"
+#include "GameEnums.h"
+#include <algorithm>
 
 /**
  * @brief Manages the main gameplay state
@@ -105,6 +108,8 @@ private:
     void checkHarpoonMonsterCollisions();
     bool checkCollision(const GameObject &obj1, const GameObject &obj2) const;
     bool areAllMonstersDead() const;
+    void addMonstersToEmptyTunnels(std::vector<Vector2> &spawnPositions);
+    void addMonstersToDistantTunnels();
 };
 
 #endif // GAMEPLAY_H

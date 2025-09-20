@@ -237,104 +237,35 @@ void GamePlay::initializeMonsters()
     // Get monster spawn positions from the level
     std::vector<Vector2> spawnPositions = currentLevel.getMonsterSpawnPositions();
 
-    // Create monsters at spawn positions
+    // Add additional monster spawns in empty tunnels
+    addMonstersToEmptyTunnels(spawnPositions);
+
+    // Create monsters at all spawn positions
     for (const Vector2 &spawnPos : spawnPositions)
     {
         auto monster = std::make_unique<Monster>(spawnPos, MonsterState::IN_TUNNEL);
         monsters.push_back(std::move(monster));
     }
 
-    // Ensure at least one monster exists in the same tunnel as the player, but not adjacent
-    if (!monsters.empty())
-    {
-        Vector2 playerStart = currentLevel.getPlayerStartPosition();
-        Vector2 playerGridPos = currentLevel.getGrid().worldToGrid(playerStart);
-        int tileSize = currentLevel.getGrid().getTileSize();
-
-        // Try to find a position in the same tunnel but at least 3 tiles away from player
-        std::vector<Vector2> validPositions;
-
-        // Check horizontal tunnel positions (same row, different columns)
-        for (int offsetX = -10; offsetX <= 10; offsetX++)
-        {
-            if (offsetX == 0)
-                continue; // Skip player's exact position
-
-            int testGridX = static_cast<int>(playerGridPos.x) + offsetX;
-            int testGridY = static_cast<int>(playerGridPos.y);
-
-            // Must be at least 3 tiles away from player
-            if (std::abs(offsetX) >= 3 &&
-                currentLevel.getGrid().isValidPosition(testGridX, testGridY) &&
-                currentLevel.getGrid().isTunnel(testGridX, testGridY))
-            {
-                Vector2 worldPos = currentLevel.getGrid().gridToWorld(testGridX, testGridY);
-                validPositions.push_back(worldPos);
-            }
-        }
-
-        // Check vertical tunnel positions (same column, different rows)
-        for (int offsetY = -10; offsetY <= 10; offsetY++)
-        {
-            if (offsetY == 0)
-                continue; // Skip player's exact position
-
-            int testGridX = static_cast<int>(playerGridPos.x);
-            int testGridY = static_cast<int>(playerGridPos.y) + offsetY;
-
-            // Must be at least 3 tiles away from player
-            if (std::abs(offsetY) >= 3 &&
-                currentLevel.getGrid().isValidPosition(testGridX, testGridY) &&
-                currentLevel.getGrid().isTunnel(testGridX, testGridY))
-            {
-                Vector2 worldPos = currentLevel.getGrid().gridToWorld(testGridX, testGridY);
-                validPositions.push_back(worldPos);
-            }
-        }
-
-        // If we found valid positions, place the first monster there
-        if (!validPositions.empty())
-        {
-            // Choose a random valid position
-            int randomIndex = rand() % validPositions.size();
-            monsters[0]->setPosition(validPositions[randomIndex]);
-        }
-        // Otherwise, keep the monster at its original spawn position (which should be far from player)
-    }
-
     // Ensure no monsters are too close to player (safety check)
     Vector2 playerStart = currentLevel.getPlayerStartPosition();
-    for (auto &monster : monsters)
+
+    // Remove monsters that are too close to player
+    monsters.erase(
+        std::remove_if(monsters.begin(), monsters.end(),
+                       [&playerStart](const std::unique_ptr<Monster> &monster)
+                       {
+                           Vector2 monsterPos = monster->getPosition();
+                           float distance = std::sqrt(std::pow(monsterPos.x - playerStart.x, 2) +
+                                                      std::pow(monsterPos.y - playerStart.y, 2));
+                           return distance < 96.0f; // Remove if closer than 3 tiles
+                       }),
+        monsters.end());
+
+    // Ensure we have at least 1 monster
+    if (monsters.size() < 1)
     {
-        Vector2 monsterPos = monster->getPosition();
-        float distance = std::sqrt(std::pow(monsterPos.x - playerStart.x, 2) +
-                                   std::pow(monsterPos.y - playerStart.y, 2));
-
-        // If monster is too close (less than 2 tiles), move it to a default safe position
-        if (distance < 64.0f) // 2 tiles * 32 pixels
-        {
-            // Move to a predefined safe spawn position
-            std::vector<Vector2> safeSpawns = currentLevel.getMonsterSpawnPositions();
-            if (!safeSpawns.empty())
-            {
-                // Find the spawn position furthest from player
-                Vector2 furthestSpawn = safeSpawns[0];
-                float maxDistance = 0.0f;
-
-                for (const Vector2 &spawn : safeSpawns)
-                {
-                    float spawnDistance = std::sqrt(std::pow(spawn.x - playerStart.x, 2) +
-                                                    std::pow(spawn.y - playerStart.y, 2));
-                    if (spawnDistance > maxDistance)
-                    {
-                        maxDistance = spawnDistance;
-                        furthestSpawn = spawn;
-                    }
-                }
-
-                monster->setPosition(furthestSpawn);
-            }
-        }
+        addMonstersToDistantTunnels();
     }
 }
 
@@ -399,4 +330,114 @@ bool GamePlay::areAllMonstersDead() const
         }
     }
     return true;
+}
+
+void GamePlay::addMonstersToEmptyTunnels(std::vector<Vector2> &spawnPositions)
+{
+    const Grid &grid = currentLevel.getGrid();
+    Vector2 playerStart = currentLevel.getPlayerStartPosition();
+    Vector2 playerGridPos = grid.worldToGrid(playerStart);
+
+    // Scan the entire grid for tunnel positions
+    for (int y = 0; y < grid.getHeight(); y++)
+    {
+        for (int x = 0; x < grid.getWidth(); x++)
+        {
+            if (grid.isTunnel(x, y))
+            {
+                Vector2 worldPos = grid.gridToWorld(x, y);
+
+                // Calculate distance from player
+                float distance = std::sqrt(std::pow(worldPos.x - playerStart.x, 2) +
+                                           std::pow(worldPos.y - playerStart.y, 2));
+
+                // Only add monsters that are far enough from player (3+ tiles away)
+                if (distance >= 96.0f)
+                {
+                    // Check if this position is already occupied
+                    bool occupied = false;
+                    for (const Vector2 &existing : spawnPositions)
+                    {
+                        float distToExisting = std::sqrt(std::pow(worldPos.x - existing.x, 2) +
+                                                         std::pow(worldPos.y - existing.y, 2));
+                        if (distToExisting < 32.0f) // Less than 1 tile away
+                        {
+                            occupied = true;
+                            break;
+                        }
+                    }
+
+                    if (!occupied)
+                    {
+                        // Add some randomness - don't fill every tunnel
+                        if (rand() % 4 == 0) // 25% chance to place monster
+                        {
+                            spawnPositions.push_back(worldPos);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+void GamePlay::addMonstersToDistantTunnels()
+{
+    const Grid &grid = currentLevel.getGrid();
+    Vector2 playerStart = currentLevel.getPlayerStartPosition();
+
+    std::vector<Vector2> distantTunnels;
+
+    // Find tunnel positions that are far from player
+    for (int y = 0; y < grid.getHeight(); y++)
+    {
+        for (int x = 0; x < grid.getWidth(); x++)
+        {
+            if (grid.isTunnel(x, y))
+            {
+                Vector2 worldPos = grid.gridToWorld(x, y);
+
+                // Calculate distance from player
+                float distance = std::sqrt(std::pow(worldPos.x - playerStart.x, 2) +
+                                           std::pow(worldPos.y - playerStart.y, 2));
+
+                // Only consider positions that are far from player
+                if (distance >= 128.0f) // 4+ tiles away
+                {
+                    // Check if position is not occupied by existing monsters
+                    bool occupied = false;
+                    for (const auto &monster : monsters)
+                    {
+                        Vector2 monsterPos = monster->getPosition();
+                        float distToMonster = std::sqrt(std::pow(worldPos.x - monsterPos.x, 2) +
+                                                        std::pow(worldPos.y - monsterPos.y, 2));
+                        if (distToMonster < 64.0f) // Less than 2 tiles away
+                        {
+                            occupied = true;
+                            break;
+                        }
+                    }
+
+                    if (!occupied)
+                    {
+                        distantTunnels.push_back(worldPos);
+                    }
+                }
+            }
+        }
+    }
+
+    // Add monsters to some distant tunnels
+    int monstersToAdd = 3 - static_cast<int>(monsters.size());
+    for (int i = 0; i < monstersToAdd && i < static_cast<int>(distantTunnels.size()); i++)
+    {
+        int randomIndex = rand() % distantTunnels.size();
+        Vector2 spawnPos = distantTunnels[randomIndex];
+
+        auto monster = std::make_unique<Monster>(spawnPos, MonsterState::IN_TUNNEL);
+        monsters.push_back(std::move(monster));
+
+        // Remove this position so we don't spawn multiple monsters at the same spot
+        distantTunnels.erase(distantTunnels.begin() + randomIndex);
+    }
 }

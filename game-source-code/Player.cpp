@@ -122,23 +122,26 @@ bool Player::shoot()
     if (!canShoot())
         return false;
 
-    // Calculate harpoon starting position (slightly ahead of player)
-    Vector2 harpoonPos = position;
-    float offset = size.x / 2;
+    // Calculate harpoon starting position (center of player)
+    Vector2 harpoonPos = {
+        position.x + size.x / 2 - 4, // Center horizontally, offset by half harpoon width
+        position.y + size.y / 2 - 4  // Center vertically, offset by half harpoon height
+    };
 
+    // Adjust position slightly based on direction to make it look like it's coming from player
     switch (facingDirection)
     {
     case Direction::UP:
-        harpoonPos.y -= offset;
+        harpoonPos.y = position.y - 8; // Start just above player
         break;
     case Direction::DOWN:
-        harpoonPos.y += size.y + offset;
+        harpoonPos.y = position.y + size.y; // Start just below player
         break;
     case Direction::LEFT:
-        harpoonPos.x -= offset;
+        harpoonPos.x = position.x - 8; // Start just left of player
         break;
     case Direction::RIGHT:
-        harpoonPos.x += size.x + offset;
+        harpoonPos.x = position.x + size.x; // Start just right of player
         break;
     default:
         return false;
