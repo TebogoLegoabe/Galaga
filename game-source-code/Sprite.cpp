@@ -1,197 +1,261 @@
 #include "Sprite.h"
+#include <cmath>
 
-void Sprite::drawDigDug(Vector2 position, Vector2 size, Direction direction)
+Sprite::Sprite(Vector2 pos, Vector2 spriteSize)
+    : position(pos), size(spriteSize)
 {
+}
+
+void Sprite::drawDigDug(Vector2 position, Direction direction, Vector2 size)
+{
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+
+    // Draw Dig Dug's body (blue with white details)
+    DrawCircleV(center, size.x / 2 - 2, BLUE);
+
+    // Draw helmet/head details
+    DrawCircleV({center.x, center.y - 3}, size.x / 3, LIGHTGRAY);
+
+    // Draw eyes
+    drawEyes(center, 2.0f, BLACK);
+
+    // Draw drill/tool based on direction
+    Vector2 drillPos = center;
     switch (direction)
     {
-    case Direction::RIGHT:
-        drawDigDugRight(position, size);
-        break;
-    case Direction::LEFT:
-        drawDigDugLeft(position, size);
-        break;
     case Direction::UP:
-        drawDigDugUp(position, size);
+        drillPos.y -= size.y / 2 + 5;
+        DrawRectangle(static_cast<int>(drillPos.x - 2), static_cast<int>(drillPos.y), 4, 8, YELLOW);
         break;
     case Direction::DOWN:
-        drawDigDugDown(position, size);
+        drillPos.y += size.y / 2 + 5;
+        DrawRectangle(static_cast<int>(drillPos.x - 2), static_cast<int>(drillPos.y - 8), 4, 8, YELLOW);
+        break;
+    case Direction::LEFT:
+        drillPos.x -= size.x / 2 + 5;
+        DrawRectangle(static_cast<int>(drillPos.x), static_cast<int>(drillPos.y - 2), 8, 4, YELLOW);
+        break;
+    case Direction::RIGHT:
+        drillPos.x += size.x / 2 + 5;
+        DrawRectangle(static_cast<int>(drillPos.x - 8), static_cast<int>(drillPos.y - 2), 8, 4, YELLOW);
         break;
     default:
-        drawDigDugRight(position, size); // Default to right
+        break;
+    }
+
+    // Draw direction indicator (small arrow)
+    drawDirectionIndicator(center, direction, 4, WHITE);
+}
+
+void Sprite::drawRedMonster(Vector2 position, Vector2 size)
+{
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+
+    // Draw main body
+    DrawCircleV(center, size.x / 2 - 2, RED);
+
+    // Draw spikes/protrusions
+    Vector2 spike1 = {center.x - 8, center.y - 8};
+    Vector2 spike2 = {center.x + 8, center.y - 8};
+    Vector2 spike3 = {center.x, center.y + 8};
+
+    Color darkRed = {139, 0, 0, 255}; // Define dark red color
+
+    DrawTriangle(spike1, {center.x - 4, center.y - 12}, {center.x - 12, center.y - 4}, darkRed);
+    DrawTriangle(spike2, {center.x + 12, center.y - 4}, {center.x + 4, center.y - 12}, darkRed);
+    DrawTriangle(spike3, {center.x - 4, center.y + 12}, {center.x + 4, center.y + 12}, darkRed);
+
+    // Draw angry eyes
+    DrawCircleV({center.x - 6, center.y - 2}, 3, WHITE);
+    DrawCircleV({center.x + 6, center.y - 2}, 3, WHITE);
+    DrawCircleV({center.x - 6, center.y - 2}, 1, RED);
+    DrawCircleV({center.x + 6, center.y - 2}, 1, RED);
+
+    // Draw mouth
+    DrawRectangle(static_cast<int>(center.x - 4), static_cast<int>(center.y + 2), 8, 2, BLACK);
+}
+
+void Sprite::drawGreenDragon(Vector2 position, Vector2 size)
+{
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+
+    // Draw main body
+    DrawCircleV(center, size.x / 2 - 2, DARKGREEN);
+
+    // Draw dragon scales/texture
+    DrawCircleV({center.x - 4, center.y - 4}, 2, GREEN);
+    DrawCircleV({center.x + 4, center.y - 4}, 2, GREEN);
+    DrawCircleV({center.x, center.y + 4}, 2, GREEN);
+
+    // Draw dragon spikes (more elaborate than red monster)
+    Vector2 topSpike = {center.x, center.y - 12};
+    DrawTriangle(
+        {center.x - 6, center.y - 6},
+        topSpike,
+        {center.x + 6, center.y - 6},
+        LIME);
+
+    // Draw dragon eyes (yellow for dragons)
+    DrawCircleV({center.x - 6, center.y - 2}, 3, YELLOW);
+    DrawCircleV({center.x + 6, center.y - 2}, 3, YELLOW);
+    DrawCircleV({center.x - 6, center.y - 2}, 1, BLACK);
+    DrawCircleV({center.x + 6, center.y - 2}, 1, BLACK);
+
+    // Draw nostrils/snout
+    DrawCircleV({center.x - 2, center.y + 2}, 1, BLACK);
+    DrawCircleV({center.x + 2, center.y + 2}, 1, BLACK);
+}
+
+void Sprite::drawDisembodiedEyes(Vector2 position, Vector2 size, bool isGreen)
+{
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+
+    // Draw floating eyes with ethereal effect
+    Color eyeColor = isGreen ? YELLOW : WHITE;
+    Color pupilColor = isGreen ? DARKGREEN : RED;
+
+    // Draw outer glow
+    DrawCircleV({center.x - 8, center.y}, 6, Fade(eyeColor, 0.3f));
+    DrawCircleV({center.x + 8, center.y}, 6, Fade(eyeColor, 0.3f));
+
+    // Draw main eyes
+    DrawCircleV({center.x - 8, center.y}, 4, eyeColor);
+    DrawCircleV({center.x + 8, center.y}, 4, eyeColor);
+
+    // Draw pupils
+    DrawCircleV({center.x - 8, center.y}, 2, pupilColor);
+    DrawCircleV({center.x + 8, center.y}, 2, pupilColor);
+}
+
+void Sprite::drawHarpoon(Vector2 position, Direction direction, Vector2 size)
+{
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+
+    switch (direction)
+    {
+    case Direction::UP:
+    case Direction::DOWN:
+        // Vertical harpoon
+        DrawRectangle(static_cast<int>(center.x - 1), static_cast<int>(position.y),
+                      2, static_cast<int>(size.y), YELLOW);
+        // Draw harpoon tip
+        if (direction == Direction::UP)
+        {
+            DrawTriangle(
+                {center.x - 3, position.y + 3},
+                {center.x, position.y - 3},
+                {center.x + 3, position.y + 3},
+                ORANGE);
+        }
+        else
+        {
+            DrawTriangle(
+                {center.x - 3, position.y + size.y - 3},
+                {center.x, position.y + size.y + 3},
+                {center.x + 3, position.y + size.y - 3},
+                ORANGE);
+        }
+        break;
+
+    case Direction::LEFT:
+    case Direction::RIGHT:
+        // Horizontal harpoon
+        DrawRectangle(static_cast<int>(position.x), static_cast<int>(center.y - 1),
+                      static_cast<int>(size.x), 2, YELLOW);
+        // Draw harpoon tip
+        if (direction == Direction::LEFT)
+        {
+            DrawTriangle(
+                {position.x + 3, center.y - 3},
+                {position.x - 3, center.y},
+                {position.x + 3, center.y + 3},
+                ORANGE);
+        }
+        else
+        {
+            DrawTriangle(
+                {position.x + size.x - 3, center.y - 3},
+                {position.x + size.x + 3, center.y},
+                {position.x + size.x - 3, center.y + 3},
+                ORANGE);
+        }
+        break;
+
+    default:
         break;
     }
 }
 
-void Sprite::drawRock(Vector2 position, Vector2 size)
+void Sprite::drawCharacterSprite(Vector2 position, Vector2 size, Color bodyColor, Color accentColor, Direction direction)
 {
-    // Draw a detailed rock sprite
-    float w = size.x;
-    float h = size.y;
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
 
-    // Main rock body
-    DrawRectangle(position.x + 2, position.y + 2, w - 4, h - 4, GRAY);
+    // Draw main body
+    DrawCircleV(center, size.x / 2 - 2, bodyColor);
 
-    // Rock highlights and shadows for 3D effect
-    DrawRectangle(position.x + 1, position.y + 1, w - 2, 3, LIGHTGRAY);
-    DrawRectangle(position.x + 1, position.y + 1, 3, h - 2, LIGHTGRAY);
-    DrawRectangle(position.x + w - 4, position.y + 3, 3, h - 6, DARKGRAY);
-    DrawRectangle(position.x + 3, position.y + h - 4, w - 6, 3, DARKGRAY);
+    // Draw accent details
+    DrawCircleV({center.x, center.y - 4}, size.x / 4, accentColor);
 
-    // Rock texture details
-    DrawPixel(position.x + 5, position.y + 7, DARKGRAY);
-    DrawPixel(position.x + 12, position.y + 5, DARKGRAY);
-    DrawPixel(position.x + 8, position.y + 15, DARKGRAY);
-    DrawPixel(position.x + 18, position.y + 12, DARKGRAY);
+    // Draw eyes
+    drawEyes(center, 2.0f);
+
+    // Draw direction indicator
+    drawDirectionIndicator(center, direction, 3, WHITE);
 }
 
-void Sprite::drawDigDugRight(Vector2 pos, Vector2 size)
+void Sprite::drawEyes(Vector2 center, float eyeSize, Color eyeColor)
 {
-    float w = size.x;
-    float h = size.y;
+    float eyeOffset = 6.0f;
 
-    // Body (blue jumpsuit)
-    DrawRectangle(pos.x + 6, pos.y + 8, 16, 12, BLUE);
+    // Draw eye whites
+    DrawCircleV({center.x - eyeOffset, center.y - 2}, eyeSize + 1, eyeColor);
+    DrawCircleV({center.x + eyeOffset, center.y - 2}, eyeSize + 1, eyeColor);
 
-    // Head
-    DrawCircle(pos.x + 14, pos.y + 8, 6, Color{255, 220, 177, 255}); // Skin tone
-
-    // Hair (black)
-    DrawCircle(pos.x + 14, pos.y + 5, 4, BLACK);
-
-    // Eyes
-    DrawPixel(pos.x + 16, pos.y + 7, BLACK);
-    DrawPixel(pos.x + 17, pos.y + 7, BLACK);
-
-    // Nose
-    DrawPixel(pos.x + 18, pos.y + 8, Color{200, 150, 120, 255});
-
-    // Arms
-    DrawRectangle(pos.x + 22, pos.y + 10, 4, 6, Color{255, 220, 177, 255}); // Right arm
-    DrawRectangle(pos.x + 4, pos.y + 12, 4, 4, Color{255, 220, 177, 255});  // Left arm
-
-    // Legs
-    DrawRectangle(pos.x + 8, pos.y + 20, 4, 6, BLUE);  // Left leg
-    DrawRectangle(pos.x + 16, pos.y + 20, 4, 6, BLUE); // Right leg
-
-    // Feet
-    DrawRectangle(pos.x + 6, pos.y + 26, 6, 2, BLACK);  // Left foot
-    DrawRectangle(pos.x + 16, pos.y + 26, 6, 2, BLACK); // Right foot
-
-    // Harpoon gun (pointing right)
-    DrawRectangle(pos.x + 26, pos.y + 12, 4, 2, DARKGRAY);
-    DrawPixel(pos.x + 30, pos.y + 13, RED); // Harpoon tip
+    // Draw pupils
+    DrawCircleV({center.x - eyeOffset, center.y - 2}, eyeSize - 1, BLACK);
+    DrawCircleV({center.x + eyeOffset, center.y - 2}, eyeSize - 1, BLACK);
 }
 
-void Sprite::drawDigDugLeft(Vector2 pos, Vector2 size)
+void Sprite::drawDirectionIndicator(Vector2 center, Direction direction, float indicatorSize, Color color)
 {
-    float w = size.x;
-    float h = size.y;
+    Vector2 indicatorPos = center;
 
-    // Body (blue jumpsuit)
-    DrawRectangle(pos.x + 6, pos.y + 8, 16, 12, BLUE);
-
-    // Head
-    DrawCircle(pos.x + 14, pos.y + 8, 6, Color{255, 220, 177, 255}); // Skin tone
-
-    // Hair (black)
-    DrawCircle(pos.x + 14, pos.y + 5, 4, BLACK);
-
-    // Eyes
-    DrawPixel(pos.x + 11, pos.y + 7, BLACK);
-    DrawPixel(pos.x + 12, pos.y + 7, BLACK);
-
-    // Nose
-    DrawPixel(pos.x + 10, pos.y + 8, Color{200, 150, 120, 255});
-
-    // Arms
-    DrawRectangle(pos.x + 2, pos.y + 10, 4, 6, Color{255, 220, 177, 255});  // Left arm
-    DrawRectangle(pos.x + 20, pos.y + 12, 4, 4, Color{255, 220, 177, 255}); // Right arm
-
-    // Legs
-    DrawRectangle(pos.x + 8, pos.y + 20, 4, 6, BLUE);  // Left leg
-    DrawRectangle(pos.x + 16, pos.y + 20, 4, 6, BLUE); // Right leg
-
-    // Feet
-    DrawRectangle(pos.x + 6, pos.y + 26, 6, 2, BLACK);  // Left foot
-    DrawRectangle(pos.x + 16, pos.y + 26, 6, 2, BLACK); // Right foot
-
-    // Harpoon gun (pointing left)
-    DrawRectangle(pos.x - 2, pos.y + 12, 4, 2, DARKGRAY);
-    DrawPixel(pos.x - 3, pos.y + 13, RED); // Harpoon tip
-}
-
-void Sprite::drawDigDugUp(Vector2 pos, Vector2 size)
-{
-    float w = size.x;
-    float h = size.y;
-
-    // Body (blue jumpsuit)
-    DrawRectangle(pos.x + 6, pos.y + 8, 16, 12, BLUE);
-
-    // Head
-    DrawCircle(pos.x + 14, pos.y + 8, 6, Color{255, 220, 177, 255}); // Skin tone
-
-    // Hair (black)
-    DrawCircle(pos.x + 14, pos.y + 5, 4, BLACK);
-
-    // Eyes
-    DrawPixel(pos.x + 12, pos.y + 6, BLACK);
-    DrawPixel(pos.x + 16, pos.y + 6, BLACK);
-
-    // Nose
-    DrawPixel(pos.x + 14, pos.y + 8, Color{200, 150, 120, 255});
-
-    // Arms (spread for balance)
-    DrawRectangle(pos.x + 2, pos.y + 10, 6, 4, Color{255, 220, 177, 255});  // Left arm
-    DrawRectangle(pos.x + 20, pos.y + 10, 6, 4, Color{255, 220, 177, 255}); // Right arm
-
-    // Legs
-    DrawRectangle(pos.x + 8, pos.y + 20, 4, 6, BLUE);  // Left leg
-    DrawRectangle(pos.x + 16, pos.y + 20, 4, 6, BLUE); // Right leg
-
-    // Feet
-    DrawRectangle(pos.x + 6, pos.y + 26, 6, 2, BLACK);  // Left foot
-    DrawRectangle(pos.x + 16, pos.y + 26, 6, 2, BLACK); // Right foot
-
-    // Harpoon gun (pointing up)
-    DrawRectangle(pos.x + 13, pos.y + 2, 2, 4, DARKGRAY);
-    DrawPixel(pos.x + 14, pos.y + 1, RED); // Harpoon tip
-}
-
-void Sprite::drawDigDugDown(Vector2 pos, Vector2 size)
-{
-    float w = size.x;
-    float h = size.y;
-
-    // Body (blue jumpsuit)
-    DrawRectangle(pos.x + 6, pos.y + 8, 16, 12, BLUE);
-
-    // Head (tilted down)
-    DrawCircle(pos.x + 14, pos.y + 8, 6, Color{255, 220, 177, 255}); // Skin tone
-
-    // Hair (black)
-    DrawCircle(pos.x + 14, pos.y + 5, 4, BLACK);
-
-    // Eyes (looking down)
-    DrawPixel(pos.x + 12, pos.y + 9, BLACK);
-    DrawPixel(pos.x + 16, pos.y + 9, BLACK);
-
-    // Nose
-    DrawPixel(pos.x + 14, pos.y + 10, Color{200, 150, 120, 255});
-
-    // Arms
-    DrawRectangle(pos.x + 2, pos.y + 12, 6, 4, Color{255, 220, 177, 255});  // Left arm
-    DrawRectangle(pos.x + 20, pos.y + 12, 6, 4, Color{255, 220, 177, 255}); // Right arm
-
-    // Legs
-    DrawRectangle(pos.x + 8, pos.y + 20, 4, 6, BLUE);  // Left leg
-    DrawRectangle(pos.x + 16, pos.y + 20, 4, 6, BLUE); // Right leg
-
-    // Feet
-    DrawRectangle(pos.x + 6, pos.y + 26, 6, 2, BLACK);  // Left foot
-    DrawRectangle(pos.x + 16, pos.y + 26, 6, 2, BLACK); // Right foot
-
-    // Harpoon gun (pointing down)
-    DrawRectangle(pos.x + 13, pos.y + 22, 2, 4, DARKGRAY);
-    DrawPixel(pos.x + 14, pos.y + 26, RED); // Harpoon tip
+    switch (direction)
+    {
+    case Direction::UP:
+        indicatorPos.y -= indicatorSize * 2;
+        DrawTriangle(
+            {indicatorPos.x - indicatorSize, indicatorPos.y + indicatorSize},
+            {indicatorPos.x, indicatorPos.y - indicatorSize},
+            {indicatorPos.x + indicatorSize, indicatorPos.y + indicatorSize},
+            color);
+        break;
+    case Direction::DOWN:
+        indicatorPos.y += indicatorSize * 2;
+        DrawTriangle(
+            {indicatorPos.x - indicatorSize, indicatorPos.y - indicatorSize},
+            {indicatorPos.x, indicatorPos.y + indicatorSize},
+            {indicatorPos.x + indicatorSize, indicatorPos.y - indicatorSize},
+            color);
+        break;
+    case Direction::LEFT:
+        indicatorPos.x -= indicatorSize * 2;
+        DrawTriangle(
+            {indicatorPos.x + indicatorSize, indicatorPos.y - indicatorSize},
+            {indicatorPos.x - indicatorSize, indicatorPos.y},
+            {indicatorPos.x + indicatorSize, indicatorPos.y + indicatorSize},
+            color);
+        break;
+    case Direction::RIGHT:
+        indicatorPos.x += indicatorSize * 2;
+        DrawTriangle(
+            {indicatorPos.x - indicatorSize, indicatorPos.y - indicatorSize},
+            {indicatorPos.x + indicatorSize, indicatorPos.y},
+            {indicatorPos.x - indicatorSize, indicatorPos.y + indicatorSize},
+            color);
+        break;
+    default:
+        DrawCircleV(indicatorPos, indicatorSize, color);
+        break;
+    }
 }

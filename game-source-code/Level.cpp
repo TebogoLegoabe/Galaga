@@ -159,47 +159,57 @@ void Level::setMonsterSpawns()
     // Clear any existing spawns
     monsterSpawnPositions.clear();
 
-    // Find all tunnel positions that are suitable for monster spawns
-    std::vector<Vector2> potentialSpawns;
+    // Place monsters specifically in the bottom tunnel area
+    // Find the bottom tunnel positions
+    std::vector<Vector2> bottomTunnelPositions;
 
-    for (int y = 0; y < grid.getHeight(); y++)
+    // Look for tunnels in the bottom area (last few rows)
+    int bottomAreaStart = grid.getHeight() - 5; // Bottom 5 rows
+
+    for (int y = bottomAreaStart; y < grid.getHeight(); y++)
     {
         for (int x = 0; x < grid.getWidth(); x++)
         {
             if (grid.getTile(x, y) == TileType::TUNNEL)
             {
                 Vector2 worldPos = grid.gridToWorld(x, y);
-                // Don't spawn too close to player start
-                Vector2 playerGridPos = grid.worldToGrid(playerStartPosition);
-                float distance = std::sqrt(std::pow(x - playerGridPos.x, 2) + std::pow(y - playerGridPos.y, 2));
-
-                if (distance > 3.0f) // At least 3 tiles away from player
-                {
-                    potentialSpawns.push_back(worldPos);
-                }
+                bottomTunnelPositions.push_back(worldPos);
             }
         }
     }
 
-    // Select a few well-distributed spawn points
-    if (!potentialSpawns.empty())
+    // If we found bottom tunnels, place monsters there
+    if (!bottomTunnelPositions.empty())
     {
-        // Add monsters to different areas of the map
-        std::vector<Vector2> selectedSpawns;
-
-        // Try to get spawns from different quadrants
-        for (const auto &spawn : potentialSpawns)
+        // Select positions with some spacing
+        for (size_t i = 0; i < bottomTunnelPositions.size() && monsterSpawnPositions.size() < 3; i += 3)
         {
-            Vector2 gridPos = grid.worldToGrid(spawn);
-            bool tooClose = false;
+            monsterSpawnPositions.push_back(bottomTunnelPositions[i]);
+        }
+    }
 
-            // Check if this spawn is too close to existing spawns
-            for (const auto &existing : selectedSpawns)
+    // If we still don't have enough monsters, add some from the main tunnel system
+    if (monsterSpawnPositions.size() < 2)
+    {
+        std::vector<Vector2> additionalSpawns = {
+            grid.gridToWorld(5, 8),  // Left tunnel
+            grid.gridToWorld(22, 8), // Right tunnel
+        };
+
+        for (const auto &spawn : additionalSpawns)
+        {
+            if (monsterSpawnPositions.size() >= 3)
+                break;
+
+            // Check if this position is far enough from existing spawns
+            bool tooClose = false;
+            for (const auto &existing : monsterSpawnPositions)
             {
                 Vector2 existingGrid = grid.worldToGrid(existing);
-                float distance = std::sqrt(std::pow(gridPos.x - existingGrid.x, 2) +
-                                           std::pow(gridPos.y - existingGrid.y, 2));
-                if (distance < 4.0f) // Keep monsters at least 4 tiles apart
+                Vector2 newGrid = grid.worldToGrid(spawn);
+                float distance = std::sqrt(std::pow(newGrid.x - existingGrid.x, 2) +
+                                           std::pow(newGrid.y - existingGrid.y, 2));
+                if (distance < 4.0f)
                 {
                     tooClose = true;
                     break;
@@ -208,13 +218,9 @@ void Level::setMonsterSpawns()
 
             if (!tooClose)
             {
-                selectedSpawns.push_back(spawn);
-                if (selectedSpawns.size() >= 4) // Limit to 4 monsters
-                    break;
+                monsterSpawnPositions.push_back(spawn);
             }
         }
-
-        monsterSpawnPositions = selectedSpawns;
     }
 }
 

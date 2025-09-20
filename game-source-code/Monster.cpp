@@ -29,69 +29,26 @@ void Monster::draw()
     if (!active || state == MonsterState::DEAD)
         return;
 
-    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
-
     switch (state)
     {
     case MonsterState::IN_TUNNEL:
         if (greenDragon)
         {
-            // Draw green dragon
-            DrawCircleV(center, size.x / 2 - 2, DARKGREEN);
-            // Draw dragon spikes
-            DrawTriangle(
-                {center.x - 8, center.y - 8},
-                {center.x, center.y - 15},
-                {center.x + 8, center.y - 8},
-                GREEN);
+            Sprite::drawGreenDragon(position, size);
         }
         else
         {
-            // Draw red monster
-            DrawCircleV(center, size.x / 2 - 2, RED);
-            // Draw monster eyes
-            DrawCircleV({center.x - 6, center.y - 4}, 3, WHITE);
-            DrawCircleV({center.x + 6, center.y - 4}, 3, WHITE);
-            DrawCircleV({center.x - 6, center.y - 4}, 1, BLACK);
-            DrawCircleV({center.x + 6, center.y - 4}, 1, BLACK);
+            Sprite::drawRedMonster(position, size);
         }
         break;
 
     case MonsterState::DISEMBODIED:
-        // Draw floating eyes
-        DrawCircleV({center.x - 8, center.y}, 4, WHITE);
-        DrawCircleV({center.x + 8, center.y}, 4, WHITE);
-        DrawCircleV({center.x - 8, center.y}, 2, RED);
-        DrawCircleV({center.x + 8, center.y}, 2, RED);
+        Sprite::drawDisembodiedEyes(position, size, greenDragon);
         break;
 
     case MonsterState::DEAD:
         // Don't draw anything for dead monsters
         break;
-    }
-
-    // Draw direction indicator for debugging
-    if (state == MonsterState::IN_TUNNEL)
-    {
-        Vector2 dirIndicator = center;
-        switch (facingDirection)
-        {
-        case Direction::UP:
-            dirIndicator.y -= 8;
-            break;
-        case Direction::DOWN:
-            dirIndicator.y += 8;
-            break;
-        case Direction::LEFT:
-            dirIndicator.x -= 8;
-            break;
-        case Direction::RIGHT:
-            dirIndicator.x += 8;
-            break;
-        default:
-            break;
-        }
-        DrawCircleV(dirIndicator, 2, YELLOW);
     }
 }
 

@@ -1,3 +1,10 @@
+// Include headers for classes we want to test
+#include "Menu.h"
+#include "GameStateManager.h"
+#include "Grid.h"
+#include "Level.h"
+#include "GamePlay.h"
+#include "Monster.h"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 #include <raylib-cpp.hpp>

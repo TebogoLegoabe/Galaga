@@ -4,6 +4,7 @@
 #include "GameObject.h"
 #include "GameEnums.h"
 #include "Grid.h"
+#include "Sprite.h"
 #include <raylib-cpp.hpp>
 
 /**

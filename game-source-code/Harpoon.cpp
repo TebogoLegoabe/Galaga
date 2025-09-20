@@ -53,31 +53,8 @@ void Harpoon::draw()
     if (!active || !isActive)
         return;
 
-    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
-
-    // Draw harpoon based on direction
-    switch (direction)
-    {
-    case Direction::UP:
-    case Direction::DOWN:
-        // Vertical harpoon
-        DrawRectangle(static_cast<int>(center.x - 1), static_cast<int>(position.y),
-                      2, static_cast<int>(size.y), YELLOW);
-        DrawCircle(static_cast<int>(center.x),
-                   static_cast<int>(direction == Direction::UP ? position.y : position.y + size.y),
-                   3, ORANGE);
-        break;
-    case Direction::LEFT:
-    case Direction::RIGHT:
-        // Horizontal harpoon
-        DrawRectangle(static_cast<int>(position.x), static_cast<int>(center.y - 1),
-                      static_cast<int>(size.x), 2, YELLOW);
-        DrawCircle(static_cast<int>(direction == Direction::LEFT ? position.x : position.x + size.x),
-                   static_cast<int>(center.y), 3, ORANGE);
-        break;
-    default:
-        break;
-    }
+    // Use the Sprite class to draw the harpoon
+    Sprite::drawHarpoon(position, direction, size);
 }
 
 void Harpoon::fire(Vector2 startPos, Direction dir)

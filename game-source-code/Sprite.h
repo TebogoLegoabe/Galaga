@@ -5,54 +5,86 @@
 #include "GameEnums.h"
 
 /**
- * @brief Simple sprite rendering system for game characters
+ * @brief Sprite class for drawing characters and objects
  */
 class Sprite
 {
 public:
     /**
-     * @brief Draw Dig Dug player sprite
-     * @param position Position to draw at
-     * @param size Size of the sprite
-     * @param direction Direction the character is facing
+     * @brief Constructor for Sprite
+     * @param pos Position to draw the sprite
+     * @param spriteSize Size of the sprite
      */
-    static void drawDigDug(Vector2 position, Vector2 size, Direction direction);
+    Sprite(Vector2 pos = {0, 0}, Vector2 spriteSize = {32, 32});
 
     /**
-     * @brief Draw a rock sprite
+     * @brief Draw Dig Dug character
+     * @param position Position to draw at
+     * @param direction Direction the character is facing
+     * @param size Size to draw the sprite
+     */
+    static void drawDigDug(Vector2 position, Direction direction, Vector2 size);
+
+    /**
+     * @brief Draw red monster
+     * @param position Position to draw at
+     * @param size Size to draw the sprite
+     */
+    static void drawRedMonster(Vector2 position, Vector2 size);
+
+    /**
+     * @brief Draw green dragon
+     * @param position Position to draw at
+     * @param size Size to draw the sprite
+     */
+    static void drawGreenDragon(Vector2 position, Vector2 size);
+
+    /**
+     * @brief Draw disembodied eyes (when monster is floating)
+     * @param position Position to draw at
+     * @param size Size to draw the sprite
+     * @param isGreen Whether this is from a green dragon
+     */
+    static void drawDisembodiedEyes(Vector2 position, Vector2 size, bool isGreen = false);
+
+    /**
+     * @brief Draw harpoon projectile
+     * @param position Position to draw at
+     * @param direction Direction the harpoon is traveling
+     * @param size Size to draw the sprite
+     */
+    static void drawHarpoon(Vector2 position, Direction direction, Vector2 size);
+
+    /**
+     * @brief Draw a simple character sprite with customizable colors
      * @param position Position to draw at
      * @param size Size of the sprite
+     * @param bodyColor Main body color
+     * @param accentColor Accent/detail color
+     * @param direction Direction facing (for asymmetric sprites)
      */
-    static void drawRock(Vector2 position, Vector2 size);
+    static void drawCharacterSprite(Vector2 position, Vector2 size, Color bodyColor, Color accentColor, Direction direction = Direction::RIGHT);
 
 private:
-    /**
-     * @brief Draw Dig Dug facing right
-     * @param pos Position to draw at
-     * @param size Size of the sprite
-     */
-    static void drawDigDugRight(Vector2 pos, Vector2 size);
+    Vector2 position;
+    Vector2 size;
 
     /**
-     * @brief Draw Dig Dug facing left
-     * @param pos Position to draw at
-     * @param size Size of the sprite
+     * @brief Draw eyes on a character
+     * @param center Center position of the character
+     * @param eyeSize Size of the eyes
+     * @param eyeColor Color of the eyes
      */
-    static void drawDigDugLeft(Vector2 pos, Vector2 size);
+    static void drawEyes(Vector2 center, float eyeSize, Color eyeColor = WHITE);
 
     /**
-     * @brief Draw Dig Dug facing up
-     * @param pos Position to draw at
-     * @param size Size of the sprite
+     * @brief Draw direction indicator
+     * @param center Center position
+     * @param direction Direction to indicate
+     * @param indicatorSize Size of the indicator
+     * @param color Color of the indicator
      */
-    static void drawDigDugUp(Vector2 pos, Vector2 size);
-
-    /**
-     * @brief Draw Dig Dug facing down
-     * @param pos Position to draw at
-     * @param size Size of the sprite
-     */
-    static void drawDigDugDown(Vector2 pos, Vector2 size);
+    static void drawDirectionIndicator(Vector2 center, Direction direction, float indicatorSize, Color color = WHITE);
 };
 
 #endif // SPRITE_H
