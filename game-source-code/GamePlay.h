@@ -4,12 +4,13 @@
 #include <raylib-cpp.hpp>
 #include <vector>
 #include <memory>
-#include <algorithm>
 #include "Level.h"
 #include "Player.h"
 #include "Monster.h"
 #include "Harpoon.h"
 #include "InputHandler.h"
+#include "CollisionManager.h"
+#include <algorithm>
 
 /**
  * @brief Manages the main gameplay state
@@ -112,6 +113,7 @@ private:
     void addMonstersToDistantTunnels();
     bool canMonsterBecomeDisembodied() const;
     void notifyMonsterBecameDisembodied();
+    void respawnPlayer();
 };
 
 #endif // GAMEPLAY_H

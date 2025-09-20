@@ -2,6 +2,7 @@
 #include <cmath>
 
 const float Player::SHOOT_COOLDOWN_TIME = 0.5f; // Half second cooldown
+const int Player::MAX_LIVES = 3;
 
 Player::Player(Vector2 startPos)
     : GameObject(startPos, {28, 28}), // Slightly smaller than tile size for better fit
@@ -273,4 +274,28 @@ bool Player::isWithinGridBounds(Vector2 worldPos, const Grid &grid) const
            worldPos.y >= 0 &&
            worldPos.x + size.x <= grid.getWidth() * grid.getTileSize() &&
            worldPos.y + size.y <= grid.getHeight() * grid.getTileSize();
+}
+
+int Player::getLives() const
+{
+    return lives;
+}
+
+bool Player::loseLife()
+{
+    if (lives > 0)
+    {
+        lives--;
+    }
+    return lives > 0;
+}
+
+void Player::resetLives()
+{
+    lives = MAX_LIVES;
+}
+
+bool Player::isAlive() const
+{
+    return lives > 0;
 }

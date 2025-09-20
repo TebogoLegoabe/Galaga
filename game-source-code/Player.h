@@ -101,6 +101,29 @@ public:
      */
     bool canShoot() const;
 
+    /**
+     * @brief Get the number of lives remaining
+     * @return Number of lives left
+     */
+    int getLives() const;
+
+    /**
+     * @brief Lose a life
+     * @return true if player still has lives left, false if game over
+     */
+    bool loseLife();
+
+    /**
+     * @brief Reset lives to maximum
+     */
+    void resetLives();
+
+    /**
+     * @brief Check if player has any lives left
+     * @return true if lives > 0
+     */
+    bool isAlive() const;
+
 private:
     Direction facingDirection;              // Direction the player is facing
     float speed;                            // Movement speed in pixels per frame
@@ -114,6 +137,9 @@ private:
     void updateShooting();
     void digAtCurrentPosition(Grid &grid);
     bool isWithinGridBounds(Vector2 worldPos, const Grid &grid) const;
+
+    int lives;                  // Number of lives remaining
+    static const int MAX_LIVES; // Maximum number of lives
 };
 
 #endif // PLAYER_H

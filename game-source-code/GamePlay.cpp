@@ -1,6 +1,6 @@
 #include "GamePlay.h"
 
-const float GamePlay::DISEMBODIED_COOLDOWN_TIME = 7.0f; // 7 seconds between disembodied transitions
+const float GamePlay::DISEMBODIED_COOLDOWN_TIME = 3.0f; // 3 seconds between disembodied transitions
 
 GamePlay::GamePlay()
     : gameOver(false), levelComplete(false), playerWon(false), disembodiedCooldown(0.0f)
@@ -19,6 +19,9 @@ void GamePlay::init()
 
     // Initialize the player at the level's start position
     player.reset(currentLevel.getPlayerStartPosition());
+
+    // Reset lives only when starting a completely new game
+    player.resetLives();
 
     // Initialize monsters
     initializeMonsters();
@@ -215,13 +218,26 @@ void GamePlay::drawHUD()
     const char *monsterText = TextFormat("Monsters Remaining: %d", aliveMonsters);
     DrawText(monsterText, 10, 55, 15, WHITE);
 
+    // Draw lives remaining
+    const char *livesText = "Lives:";
+    DrawText(livesText, 10, 75, 15, WHITE);
+
+    // Draw life icons (small blue circles representing Dig Dug)
+    int livesStartX = 60;
+    int livesY = 78;
+    for (int i = 0; i < player.getLives(); i++)
+    {
+        DrawCircleV({static_cast<float>(livesStartX + i * 25), static_cast<float>(livesY)}, 8, BLUE);
+        DrawCircleV({static_cast<float>(livesStartX + i * 25), static_cast<float>(livesY)}, 3, WHITE); // Direction indicator
+    }
+
     // Draw controls
     const char *controls = "ARROW KEYS/WASD: Move and dig | SPACE: Shoot harpoon";
     DrawText(controls, 10, GetScreenHeight() - 65, 15, WHITE);
 
     const char *harpoonStatus = player.canShoot() ? "Harpoon: READY" : "Harpoon: RELOADING...";
     Color harpoonColor = player.canShoot() ? GREEN : ORANGE;
-    DrawText(harpoonStatus, 10, 75, 15, harpoonColor);
+    DrawText(harpoonStatus, 10, 95, 15, harpoonColor);
 
     const char *instruction = "Press ESC to return to menu";
     DrawText(instruction, 10, GetScreenHeight() - 25, 15, WHITE);
@@ -319,9 +335,20 @@ void GamePlay::checkPlayerMonsterCollisions()
         {
             if (checkCollision(player, *monster))
             {
-                // Player collided with monster - game over
-                gameOver = true;
-                playerWon = false;
+                // Player collided with monster - lose a life
+                bool stillAlive = player.loseLife();
+
+                if (!stillAlive)
+                {
+                    // No lives left - game over
+                    gameOver = true;
+                    playerWon = false;
+                }
+                else
+                {
+                    // Still has lives - respawn player at start position
+                    respawnPlayer();
+                }
                 return;
             }
         }
@@ -480,4 +507,13 @@ void GamePlay::notifyMonsterBecameDisembodied()
 {
     // Reset the cooldown timer when a monster becomes disembodied
     disembodiedCooldown = DISEMBODIED_COOLDOWN_TIME;
+}
+
+void GamePlay::respawnPlayer()
+{
+    // Reset player position to starting location
+    player.reset(currentLevel.getPlayerStartPosition());
+
+    // Optional: Add brief invincibility period or visual feedback here
+    // For now, just respawn at start position
 }
