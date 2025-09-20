@@ -4,11 +4,11 @@
 #include "GameObject.h"
 #include "GameEnums.h"
 #include "Grid.h"
-#include "Sprite.h"
+#include "Player.h"
 #include <raylib-cpp.hpp>
 
 /**
- * @brief Monster class for underground creatures
+ * @brief Monster class for Dig Dug enemies
  */
 class Monster : public GameObject
 {
@@ -16,39 +16,46 @@ public:
     /**
      * @brief Constructor for Monster
      * @param startPos Starting position in world coordinates
-     * @param monsterType Type of monster (red or green)
+     * @param state Initial monster state
      */
-    Monster(Vector2 startPos = {0, 0}, bool isGreen = false);
-
-    /**
-     * @brief Virtual destructor
-     */
-    virtual ~Monster() = default;
+    Monster(Vector2 startPos = {0, 0}, MonsterState state = MonsterState::IN_TUNNEL);
 
     /**
      * @brief Update the monster
      */
-    virtual void update() override;
+    void update() override;
 
     /**
      * @brief Draw the monster
      */
-    virtual void draw() override;
+    void draw() override;
 
     /**
-     * @brief Update monster AI and movement
+     * @brief Update monster AI to chase the player
+     * @param player Reference to the player
      * @param grid Reference to the game grid
-     * @param playerPos Player's current position
      */
-    void updateAI(const Grid &grid, Vector2 playerPos);
+    void updateAI(const Player &player, const Grid &grid);
 
     /**
-     * @brief Check if the monster can move to a position
-     * @param newPos Position to check in world coordinates
+     * @brief Move the monster in a direction
+     * @param direction Direction to move
      * @param grid Reference to the game grid
-     * @return true if the position is valid
+     * @return true if movement was successful
      */
-    bool canMoveTo(Vector2 newPos, const Grid &grid) const;
+    bool move(Direction direction, const Grid &grid);
+
+    /**
+     * @brief Get the monster's current state
+     * @return Current MonsterState
+     */
+    MonsterState getState() const;
+
+    /**
+     * @brief Set the monster's state
+     * @param newState New monster state
+     */
+    void setState(MonsterState newState);
 
     /**
      * @brief Get the monster's grid position
@@ -58,21 +65,19 @@ public:
     Vector2 getGridPosition(const Grid &grid) const;
 
     /**
-     * @brief Get the monster's current state
-     * @return Current MonsterState
+     * @brief Check if the monster can move to a position
+     * @param newPos Position to check in world coordinates
+     * @param grid Reference to the game grid
+     * @return true if the position is valid for the monster's current state
      */
-    MonsterState getState() const;
+    bool canMoveTo(Vector2 newPos, const Grid &grid) const;
 
     /**
-     * @brief Kill the monster
+     * @brief Reset the monster to starting position and state
+     * @param startPos Starting position
+     * @param state Starting state
      */
-    void kill();
-
-    /**
-     * @brief Check if monster is dead
-     * @return true if monster is dead
-     */
-    bool isDead() const;
+    void reset(Vector2 startPos, MonsterState state = MonsterState::IN_TUNNEL);
 
     /**
      * @brief Get the monster's speed
@@ -87,34 +92,38 @@ public:
     void setSpeed(float newSpeed);
 
     /**
-     * @brief Reset the monster to starting position and state
-     * @param startPos Starting position
+     * @brief Check if the monster is dead
+     * @return true if monster is dead
      */
-    void reset(Vector2 startPos);
-
-    /**
-     * @brief Check if this is a green dragon
-     * @return true if green dragon, false if red monster
-     */
-    bool isGreenDragon() const;
+    bool isDead() const;
 
 protected:
-    MonsterState state;        // Current monster state
-    Direction facingDirection; // Direction the monster is facing
+    /**
+     * @brief Update movement (protected so derived classes can access)
+     */
+    void updateMovement();
+
+    /**
+     * @brief Update state timer (protected so derived classes can access)
+     */
+    void updateStateTimer();
+
+    MonsterState currentState; // Current monster state (protected for derived classes)
     float speed;               // Movement speed in pixels per frame
     Vector2 targetPosition;    // Target position for smooth movement
     bool isMoving;             // Whether the monster is currently moving
-    bool greenDragon;          // Whether this is a green dragon
-    float moveTimer;           // Timer for controlling movement frequency
-    float moveInterval;        // How often the monster tries to move (in seconds)
+    float stateTimer;          // Timer for state transitions
+    float aiUpdateTimer;       // Timer for AI updates
+    Direction lastDirection;   // Last movement direction
 
-    // Protected helper methods for derived classes
-    void updateMovement();
-    Direction chooseNextDirection(const Grid &grid, Vector2 playerPos);
+private:
+    // AI and pathfinding methods
+    Direction findBestDirectionToPlayer(const Player &player, const Grid &grid);
+    Direction findRandomValidDirection(const Grid &grid);
+    bool shouldBecomeDisembodied(const Player &player, const Grid &grid);
     bool isWithinGridBounds(Vector2 worldPos, const Grid &grid) const;
-    float getDistanceToPlayer(Vector2 playerPos) const;
-    std::vector<Direction> getValidDirections(const Grid &grid) const;
-    Direction getDirectionTowardsPlayer(Vector2 playerPos) const;
+    float calculateDistanceToPlayer(const Player &player) const;
+    bool isPlayerInSameTunnel(const Player &player, const Grid &grid) const;
 };
 
 #endif // MONSTER_H

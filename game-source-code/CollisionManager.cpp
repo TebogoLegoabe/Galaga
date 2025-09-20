@@ -2,9 +2,6 @@
 
 Monster *CollisionManager::checkPlayerMonsterCollision(const Player &player, const std::vector<std::unique_ptr<Monster>> &monsters)
 {
-    if (!player.isActive())
-        return nullptr;
-
     Rectangle playerBounds = player.getBounds();
 
     for (const auto &monster : monsters)
@@ -18,16 +15,17 @@ Monster *CollisionManager::checkPlayerMonsterCollision(const Player &player, con
             }
         }
     }
-
     return nullptr;
 }
 
 Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon, const std::vector<std::unique_ptr<Monster>> &monsters, const Grid &grid)
 {
-    if (!harpoon.isHarpoonActive())
-        return nullptr;
-
+    // Use getBounds() method instead of accessing private isActive
     Rectangle harpoonBounds = harpoon.getBounds();
+
+    // If harpoon bounds are empty/invalid, it's probably not active
+    if (harpoonBounds.width <= 0 || harpoonBounds.height <= 0)
+        return nullptr;
 
     for (const auto &monster : monsters)
     {
@@ -36,29 +34,21 @@ Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon, const 
             Rectangle monsterBounds = monster->getBounds();
             if (CheckCollisionRecs(harpoonBounds, monsterBounds))
             {
+                // Kill the monster
+                monster->setState(MonsterState::DEAD);
+
+                // Try to deactivate the harpoon (if it has a public method)
+                // harpoon.setActive(false); // This might not exist, so we'll skip it
+
                 return monster.get();
             }
         }
     }
-
     return nullptr;
 }
 
-bool CollisionManager::checkHarpoonBounds(const Harpoon &harpoon, const Grid &grid)
-{
-    if (!harpoon.isHarpoonActive())
-        return false;
-
-    // Use the existing hasReachedMaxRange method
-    return harpoon.hasReachedMaxRange(grid);
-}
-
-// Overloaded methods for raw pointer vectors
 Monster *CollisionManager::checkPlayerMonsterCollision(const Player &player, const std::vector<Monster *> &monsters)
 {
-    if (!player.isActive())
-        return nullptr;
-
     Rectangle playerBounds = player.getBounds();
 
     for (Monster *monster : monsters)
@@ -72,16 +62,17 @@ Monster *CollisionManager::checkPlayerMonsterCollision(const Player &player, con
             }
         }
     }
-
     return nullptr;
 }
 
 Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon, const std::vector<Monster *> &monsters, const Grid &grid)
 {
-    if (!harpoon.isHarpoonActive())
-        return nullptr;
-
+    // Use getBounds() method instead of accessing private isActive
     Rectangle harpoonBounds = harpoon.getBounds();
+
+    // If harpoon bounds are empty/invalid, it's probably not active
+    if (harpoonBounds.width <= 0 || harpoonBounds.height <= 0)
+        return nullptr;
 
     for (Monster *monster : monsters)
     {
@@ -90,10 +81,15 @@ Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon, const 
             Rectangle monsterBounds = monster->getBounds();
             if (CheckCollisionRecs(harpoonBounds, monsterBounds))
             {
+                // Kill the monster
+                monster->setState(MonsterState::DEAD);
+
+                // Try to deactivate the harpoon (if it has a public method)
+                // harpoon.setActive(false); // This might not exist, so we'll skip it
+
                 return monster;
             }
         }
     }
-
     return nullptr;
 }

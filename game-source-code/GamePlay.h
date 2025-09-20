@@ -2,13 +2,13 @@
 #define GAMEPLAY_H
 
 #include <raylib-cpp.hpp>
+#include <vector>
+#include <memory>
 #include "Level.h"
 #include "Player.h"
 #include "Monster.h"
+#include "Harpoon.h"
 #include "InputHandler.h"
-#include "CollisionManager.h"
-#include <vector>
-#include <memory>
 
 /**
  * @brief Manages the main gameplay state
@@ -82,21 +82,15 @@ public:
     Level &getCurrentLevel();
 
     /**
-     * @brief Get all monsters for testing
+     * @brief Get the monsters vector for testing
      * @return Reference to the monsters vector
      */
     std::vector<std::unique_ptr<Monster>> &getMonsters();
 
-    /**
-     * @brief Check if all monsters are dead
-     * @return true if all monsters are dead
-     */
-    bool allMonstersDead() const;
-
 private:
     Level currentLevel;                             // The current level
     Player player;                                  // The player character
-    std::vector<std::unique_ptr<Monster>> monsters; // All monsters in the level
+    std::vector<std::unique_ptr<Monster>> monsters; // The monsters
     bool gameOver;                                  // Game over flag
     bool levelComplete;                             // Level complete flag
     bool playerWon;                                 // Player won flag
@@ -104,9 +98,13 @@ private:
     void updateGameLogic();
     void drawHUD();
     void handlePlayerMovement();
-    void updateMonsters();
-    void checkCollisions();
     void initializeMonsters();
+    void updateMonsters();
+    void drawMonsters();
+    void checkPlayerMonsterCollisions();
+    void checkHarpoonMonsterCollisions();
+    bool checkCollision(const GameObject &obj1, const GameObject &obj2) const;
+    bool areAllMonstersDead() const;
 };
 
 #endif // GAMEPLAY_H

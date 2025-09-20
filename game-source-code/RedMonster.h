@@ -2,9 +2,11 @@
 #define RED_MONSTER_H
 
 #include "Monster.h"
+#include <algorithm>
+#include <random>
 
 /**
- * @brief Red monster class - specific type of monster
+ * @brief Red monster subclass with more aggressive behavior
  */
 class RedMonster : public Monster
 {
@@ -26,19 +28,27 @@ public:
     void draw() override;
 
     /**
-     * @brief Update red monster AI and movement
-     * @param playerPos Player's current position
+     * @brief Update monster AI to chase the player (RedMonster specific)
+     * @param playerPos Player position
      * @param grid Reference to the game grid
      */
     void updateAI(Vector2 playerPos, Grid &grid);
 
 private:
     /**
-     * @brief Choose next direction for red monster movement
+     * @brief Find the best direction to move toward the player
+     * @param playerPos Player position
      * @param grid Reference to the game grid
-     * @return Direction to move
+     * @return Best direction to move
      */
-    Direction chooseNextDirection(Grid &grid);
+    Direction findBestDirectionToPlayer(Vector2 playerPos, const Grid &grid);
+
+    /**
+     * @brief Find a random valid direction to move
+     * @param grid Reference to the game grid
+     * @return Random valid direction
+     */
+    Direction findRandomValidDirection(const Grid &grid);
 };
 
 #endif // RED_MONSTER_H

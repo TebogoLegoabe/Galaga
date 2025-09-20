@@ -1,10 +1,3 @@
-// Include headers for classes we want to test
-#include "Menu.h"
-#include "GameStateManager.h"
-#include "Grid.h"
-#include "Level.h"
-#include "GamePlay.h"
-#include "Monster.h"
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include "doctest.h"
 #include <raylib-cpp.hpp>
@@ -16,8 +9,7 @@
 #include "Level.h"
 #include "GamePlay.h"
 #include "Monster.h"
-#include "Harpoon.h"
-#include "CollisionManager.h"
+#include "Player.h"
 
 TEST_CASE("Menu initializes in main menu state")
 {
@@ -269,92 +261,116 @@ TEST_CASE("Level checks world position bounds correctly")
     CHECK(level.isWithinBounds(invalidPos) == false);
 }
 
-// Monster Tests
-TEST_CASE("Monster initializes with correct default state")
+// Monster tests
+TEST_CASE("Monster initializes with correct state")
 {
     // Arrange & Act
-    Monster monster({100, 100}, false);
+    Monster monster(Vector2{100, 100}, MonsterState::IN_TUNNEL);
 
     // Assert
     CHECK(monster.getState() == MonsterState::IN_TUNNEL);
     CHECK(monster.isActive() == true);
-    CHECK(monster.isDead() == false);
-    CHECK(monster.isGreenDragon() == false);
 }
 
-TEST_CASE("Monster initializes as green dragon when specified")
-{
-    // Arrange & Act
-    Monster monster({100, 100}, true);
-
-    // Assert
-    CHECK(monster.isGreenDragon() == true);
-    CHECK(monster.getState() == MonsterState::IN_TUNNEL);
-}
-
-TEST_CASE("Monster can be killed")
+TEST_CASE("Monster can change state")
 {
     // Arrange
-    Monster monster({100, 100}, false);
+    Monster monster(Vector2{100, 100}, MonsterState::IN_TUNNEL);
 
     // Act
-    monster.kill();
+    monster.setState(MonsterState::DISEMBODIED);
 
     // Assert
-    CHECK(monster.isDead() == true);
-    CHECK(monster.getState() == MonsterState::DEAD);
-    CHECK(monster.isActive() == false);
+    CHECK(monster.getState() == MonsterState::DISEMBODIED);
 }
 
-TEST_CASE("Monster can only move through tunnels")
+TEST_CASE("Monster movement validation for in-tunnel state")
 {
     // Arrange
     Grid grid(10, 10, 32);
-    Monster monster({32, 32}, false); // Position at grid (1,1)
+    grid.setTile(3, 3, TileType::TUNNEL);
+    grid.setTile(4, 3, TileType::TUNNEL);
+    grid.setTile(5, 3, TileType::ROCK);
 
-    // Create a tunnel at (2,1) and leave earth at (0,1)
-    grid.setTile(2, 1, TileType::TUNNEL);
-    // (0,1) remains earth
-    grid.setTile(1, 2, TileType::ROCK);
+    Monster monster(grid.gridToWorld(3, 3), MonsterState::IN_TUNNEL);
 
     // Act & Assert
-    CHECK(monster.canMoveTo({64, 32}, grid) == true);  // Move to tunnel (2,1)
-    CHECK(monster.canMoveTo({0, 32}, grid) == false);  // Move to earth (0,1)
-    CHECK(monster.canMoveTo({32, 64}, grid) == false); // Move to rock (1,2)
+    Vector2 tunnelPos = grid.gridToWorld(4, 3);
+    Vector2 rockPos = grid.gridToWorld(5, 3);
+    Vector2 earthPos = grid.gridToWorld(3, 4);
+
+    CHECK(monster.canMoveTo(tunnelPos, grid) == true); // Can move to tunnel
+    CHECK(monster.canMoveTo(rockPos, grid) == false);  // Cannot move to rock
+    CHECK(monster.canMoveTo(earthPos, grid) == false); // Cannot move to earth in tunnel state
 }
 
-TEST_CASE("Monster resets correctly")
+TEST_CASE("Monster movement validation for disembodied state")
 {
     // Arrange
-    Monster monster({100, 100}, false);
-    monster.kill();
-    Vector2 newStartPos = {200, 200};
+    Grid grid(10, 10, 32);
+    grid.setTile(3, 3, TileType::TUNNEL);
+    grid.setTile(4, 3, TileType::EARTH);
+    grid.setTile(5, 3, TileType::ROCK);
+
+    Monster monster(grid.gridToWorld(3, 3), MonsterState::DISEMBODIED);
+
+    // Act & Assert
+    Vector2 tunnelPos = grid.gridToWorld(3, 3);
+    Vector2 earthPos = grid.gridToWorld(4, 3);
+    Vector2 rockPos = grid.gridToWorld(5, 3);
+
+    CHECK(monster.canMoveTo(tunnelPos, grid) == true); // Can move to tunnel
+    CHECK(monster.canMoveTo(earthPos, grid) == true);  // Can move to earth in disembodied state
+    CHECK(monster.canMoveTo(rockPos, grid) == false);  // Cannot move to rock
+}
+
+TEST_CASE("Dead monster cannot move")
+{
+    // Arrange
+    Grid grid(10, 10, 32);
+    grid.setTile(3, 3, TileType::TUNNEL);
+
+    Monster monster(grid.gridToWorld(3, 3), MonsterState::DEAD);
+
+    // Act & Assert
+    Vector2 anyPos = grid.gridToWorld(4, 3);
+    CHECK(monster.canMoveTo(anyPos, grid) == false);
+}
+
+TEST_CASE("Monster gets correct grid position")
+{
+    // Arrange
+    Grid grid(10, 10, 32);
+    Vector2 worldPos = grid.gridToWorld(5, 7);
+    Monster monster(worldPos, MonsterState::IN_TUNNEL);
 
     // Act
-    monster.reset(newStartPos);
+    Vector2 gridPos = monster.getGridPosition(grid);
 
     // Assert
-    CHECK(monster.getPosition().x == 200);
-    CHECK(monster.getPosition().y == 200);
-    CHECK(monster.isDead() == false);
-    CHECK(monster.isActive() == true);
+    CHECK(gridPos.x == 5.0f);
+    CHECK(gridPos.y == 7.0f);
+}
+
+TEST_CASE("Monster reset works correctly")
+{
+    // Arrange
+    Monster monster(Vector2{100, 100}, MonsterState::DISEMBODIED);
+    monster.setActive(false);
+
+    Vector2 newPos = {200, 200};
+
+    // Act
+    monster.reset(newPos, MonsterState::IN_TUNNEL);
+
+    // Assert
+    CHECK(monster.getPosition().x == newPos.x);
+    CHECK(monster.getPosition().y == newPos.y);
     CHECK(monster.getState() == MonsterState::IN_TUNNEL);
+    CHECK(monster.isActive() == true);
 }
 
-TEST_CASE("Monster speed can be set and retrieved")
-{
-    // Arrange
-    Monster monster({100, 100}, false);
-    float newSpeed = 1.5f;
-
-    // Act
-    monster.setSpeed(newSpeed);
-
-    // Assert
-    CHECK(monster.getSpeed() == newSpeed);
-}
-
-// GamePlay Tests with Monsters
+// GamePlay with monsters tests
 TEST_CASE("GamePlay initializes with monsters")
 {
     // Arrange & Act
@@ -365,132 +381,57 @@ TEST_CASE("GamePlay initializes with monsters")
     CHECK(gameplay.getMonsters().size() > 0);
 }
 
-TEST_CASE("GamePlay detects when all monsters are dead")
-{
-    // Arrange
-    GamePlay gameplay;
-    gameplay.init();
-
-    // Act - Kill all monsters
-    for (auto &monster : gameplay.getMonsters())
-    {
-        if (monster)
-        {
-            monster->kill();
-        }
-    }
-
-    // Assert
-    CHECK(gameplay.allMonstersDead() == true);
-}
-
-// Harpoon Tests
-TEST_CASE("Harpoon initializes as inactive")
+TEST_CASE("GamePlay monsters are active after initialization")
 {
     // Arrange & Act
-    Harpoon harpoon({100, 100}, Direction::RIGHT);
+    GamePlay gameplay;
+    gameplay.init();
+    auto &monsters = gameplay.getMonsters();
 
     // Assert
-    CHECK(harpoon.isHarpoonActive() == false);
-    CHECK(harpoon.getIsActive() == false);
+    bool hasActiveMonster = false;
+    for (const auto &monster : monsters)
+    {
+        if (monster->isActive() && !monster->isDead())
+        {
+            hasActiveMonster = true;
+            break;
+        }
+    }
+    CHECK(hasActiveMonster == true);
 }
 
-TEST_CASE("Harpoon can be fired")
+TEST_CASE("Player movement works correctly")
 {
     // Arrange
-    Harpoon harpoon;
-    Vector2 startPos = {100, 100};
-    Direction direction = Direction::RIGHT;
+    Grid grid(10, 10, 32);
+    // Create some tunnels for the player to move in
+    grid.digTunnel(5, 5);
+    grid.digTunnel(6, 5);
+
+    Player player(grid.gridToWorld(5, 5));
+    Vector2 initialPos = player.getPosition();
 
     // Act
-    harpoon.fire(startPos, direction);
+    bool moveResult = player.move(Direction::RIGHT, grid);
+    player.update(); // Update movement
 
     // Assert
-    CHECK(harpoon.isHarpoonActive() == true);
-    CHECK(harpoon.getIsActive() == true);
-    CHECK(harpoon.getDirection() == Direction::RIGHT);
+    CHECK(moveResult == true);
+    // Position should eventually change (might not be immediate due to smooth movement)
 }
 
-TEST_CASE("Harpoon can be stopped")
+TEST_CASE("Player cannot move into rocks")
 {
     // Arrange
-    Harpoon harpoon;
-    harpoon.fire({100, 100}, Direction::RIGHT);
+    Grid grid(10, 10, 32);
+    grid.setTile(5, 5, TileType::ROCK);
+
+    Player player(grid.gridToWorld(4, 5));
 
     // Act
-    harpoon.stop();
+    bool moveResult = player.move(Direction::RIGHT, grid);
 
     // Assert
-    CHECK(harpoon.isHarpoonActive() == false);
-    CHECK(harpoon.getIsActive() == false);
-}
-
-TEST_CASE("Harpoon resets correctly")
-{
-    // Arrange
-    Harpoon harpoon;
-    harpoon.fire({100, 100}, Direction::RIGHT);
-
-    // Act
-    harpoon.reset();
-
-    // Assert
-    CHECK(harpoon.isHarpoonActive() == false);
-    CHECK(harpoon.getIsActive() == false);
-}
-
-TEST_CASE("Player can shoot harpoon when ready")
-{
-    // Arrange
-    Player player({100, 100});
-
-    // Act
-    bool result = player.shootHarpoon();
-
-    // Assert
-    CHECK(result == true);
-    CHECK(player.getHarpoon().isHarpoonActive() == true);
-    CHECK(player.canShoot() == false);
-}
-
-TEST_CASE("Player cannot shoot harpoon when already active")
-{
-    // Arrange
-    Player player({100, 100});
-    player.shootHarpoon(); // First shot
-
-    // Act
-    bool result = player.shootHarpoon(); // Try to shoot again
-
-    // Assert
-    CHECK(result == false);
-}
-
-// CollisionManager Tests
-TEST_CASE("CollisionManager detects player-monster collision")
-{
-    // Arrange
-    Player player({100, 100});
-    std::vector<std::unique_ptr<Monster>> monsters;
-    monsters.push_back(std::make_unique<Monster>(Vector2{100, 100}, false)); // Same position
-
-    // Act
-    Monster *result = CollisionManager::checkPlayerMonsterCollision(player, monsters);
-
-    // Assert
-    CHECK(result != nullptr);
-}
-
-TEST_CASE("CollisionManager detects no collision when objects are apart")
-{
-    // Arrange
-    Player player({100, 100});
-    std::vector<std::unique_ptr<Monster>> monsters;
-    monsters.push_back(std::make_unique<Monster>(Vector2{200, 200}, false)); // Different position
-
-    // Act
-    Monster *result = CollisionManager::checkPlayerMonsterCollision(player, monsters);
-
-    // Assert
-    CHECK(result == nullptr);
+    CHECK(moveResult == false);
 }

@@ -129,8 +129,8 @@ void Level::setMonsterSpawns()
     monsterSpawnPositions.clear();
 
     // Add one monster to the left tunnel (x = 2-7, y = 10)
-    Vector2 leftTunnelSpawn = grid.gridToWorld(4, 10);
-    monsterSpawnPositions.push_back(leftTunnelSpawn);
+    Vector2 leftTunnelSpawn = grid.gridToWorld(2, 10);
+    // monsterSpawnPositions.push_back(leftTunnelSpawn);
 
     // Add one monster to the right tunnel (x = 19-26, y = 15)
     Vector2 rightTunnelSpawn = grid.gridToWorld(22, 15);

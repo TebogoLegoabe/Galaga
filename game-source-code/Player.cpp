@@ -1,22 +1,32 @@
 #include "Player.h"
 #include <cmath>
 
+const float Player::SHOOT_COOLDOWN_TIME = 0.5f; // Half second cooldown
+
 Player::Player(Vector2 startPos)
     : GameObject(startPos, {28, 28}), // Slightly smaller than tile size for better fit
       facingDirection(Direction::RIGHT),
       speed(2.0f),
       targetPosition(startPos),
       isMoving(false),
-      harpoon() // Default construct the harpoon
+      harpoon(std::make_unique<Harpoon>()),
+      shootCooldown(0.0f)
 {
 }
 
 void Player::update()
 {
     updateMovement();
+    updateShooting();
 
     // Update harpoon
-    harpoon.update();
+    if (harpoon)
+    {
+        harpoon->update();
+
+        // Check if harpoon should be deactivated
+        // This will be handled by collision detection in GamePlay
+    }
 }
 
 void Player::draw()
@@ -24,11 +34,42 @@ void Player::draw()
     if (!active)
         return;
 
-    // Use the Sprite class to draw Dig Dug
-    Sprite::drawDigDug(position, facingDirection, size);
+    // Draw the player as a circle for now (can be replaced with sprite later)
+    Color playerColor = BLUE;
 
-    // Draw harpoon
-    harpoon.draw();
+    // Draw main body
+    DrawCircleV(Vector2{position.x + size.x / 2, position.y + size.y / 2},
+                size.x / 2 - 2, playerColor);
+
+    // Draw a simple direction indicator
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+    Vector2 directionIndicator = center;
+
+    switch (facingDirection)
+    {
+    case Direction::UP:
+        directionIndicator.y -= size.y / 3;
+        break;
+    case Direction::DOWN:
+        directionIndicator.y += size.y / 3;
+        break;
+    case Direction::LEFT:
+        directionIndicator.x -= size.x / 3;
+        break;
+    case Direction::RIGHT:
+        directionIndicator.x += size.x / 3;
+        break;
+    default:
+        break;
+    }
+
+    DrawCircleV(directionIndicator, 4, WHITE);
+
+    // Draw harpoon if active
+    if (harpoon)
+    {
+        harpoon->draw();
+    }
 }
 
 bool Player::move(Direction direction, Grid &grid)
@@ -76,6 +117,40 @@ bool Player::move(Direction direction, Grid &grid)
     return true;
 }
 
+bool Player::shoot()
+{
+    if (!canShoot())
+        return false;
+
+    // Calculate harpoon starting position (slightly ahead of player)
+    Vector2 harpoonPos = position;
+    float offset = size.x / 2;
+
+    switch (facingDirection)
+    {
+    case Direction::UP:
+        harpoonPos.y -= offset;
+        break;
+    case Direction::DOWN:
+        harpoonPos.y += size.y + offset;
+        break;
+    case Direction::LEFT:
+        harpoonPos.x -= offset;
+        break;
+    case Direction::RIGHT:
+        harpoonPos.x += size.x + offset;
+        break;
+    default:
+        return false;
+    }
+
+    // Fire the harpoon
+    harpoon->fire(harpoonPos, facingDirection);
+    shootCooldown = SHOOT_COOLDOWN_TIME;
+
+    return true;
+}
+
 Direction Player::getFacingDirection() const
 {
     return facingDirection;
@@ -113,9 +188,12 @@ void Player::reset(Vector2 startPos)
     facingDirection = Direction::RIGHT;
     isMoving = false;
     active = true;
+    shootCooldown = 0.0f;
 
-    // Reset harpoon
-    harpoon.reset();
+    if (harpoon)
+    {
+        harpoon->reset();
+    }
 }
 
 float Player::getSpeed() const
@@ -126,6 +204,21 @@ float Player::getSpeed() const
 void Player::setSpeed(float newSpeed)
 {
     speed = newSpeed;
+}
+
+Harpoon &Player::getHarpoon()
+{
+    return *harpoon;
+}
+
+const Harpoon &Player::getHarpoon() const
+{
+    return *harpoon;
+}
+
+bool Player::canShoot() const
+{
+    return shootCooldown <= 0.0f && (!harpoon->isHarpoonActive());
 }
 
 void Player::updateMovement()
@@ -152,6 +245,19 @@ void Player::updateMovement()
     }
 }
 
+void Player::updateShooting()
+{
+    // Update shoot cooldown
+    if (shootCooldown > 0.0f)
+    {
+        shootCooldown -= GetFrameTime();
+        if (shootCooldown < 0.0f)
+        {
+            shootCooldown = 0.0f;
+        }
+    }
+}
+
 void Player::digAtCurrentPosition(Grid &grid)
 {
     Vector2 gridPos = grid.worldToGrid(position);
@@ -164,44 +270,4 @@ bool Player::isWithinGridBounds(Vector2 worldPos, const Grid &grid) const
            worldPos.y >= 0 &&
            worldPos.x + size.x <= grid.getWidth() * grid.getTileSize() &&
            worldPos.y + size.y <= grid.getHeight() * grid.getTileSize();
-}
-
-bool Player::shootHarpoon()
-{
-    if (harpoon.isHarpoonActive())
-        return false;
-
-    // Calculate harpoon start position (in front of player)
-    Vector2 harpoonStart = {position.x + size.x / 2 - 4, position.y + size.y / 2 - 4};
-
-    switch (facingDirection)
-    {
-    case Direction::UP:
-        harpoonStart.y -= 10;
-        break;
-    case Direction::DOWN:
-        harpoonStart.y += 10;
-        break;
-    case Direction::LEFT:
-        harpoonStart.x -= 10;
-        break;
-    case Direction::RIGHT:
-        harpoonStart.x += 10;
-        break;
-    default:
-        return false;
-    }
-
-    harpoon.fire(harpoonStart, facingDirection);
-    return true;
-}
-
-Harpoon &Player::getHarpoon()
-{
-    return harpoon;
-}
-
-bool Player::canShoot() const
-{
-    return !harpoon.isHarpoonActive();
 }
