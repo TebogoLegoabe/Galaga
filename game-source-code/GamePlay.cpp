@@ -336,9 +336,9 @@ void GamePlay::checkPlayerMonsterCollisions()
             if (checkCollision(player, *monster))
             {
                 // Player collided with monster - lose a life
-                bool stillAlive = player.loseLife();
+                bool stillAlive = player.loseLife(); // Decrements lives by 1
 
-                if (!stillAlive)
+                if (!stillAlive) // This means lives == 0
                 {
                     // No lives left - game over
                     gameOver = true;
