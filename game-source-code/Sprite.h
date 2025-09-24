@@ -33,6 +33,13 @@ public:
     static void drawRedMonster(Vector2 position, Vector2 size);
 
     /**
+     * @brief Draw a rock
+     * @param position Position to draw at
+     * @param size Size of the rock
+     */
+    static void drawRock(Vector2 position, Vector2 size);
+
+    /**
      * @brief Draw green dragon
      * @param position Position to draw at
      * @param size Size to draw the sprite

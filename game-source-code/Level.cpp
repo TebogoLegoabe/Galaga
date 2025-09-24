@@ -268,3 +268,60 @@ void Level::setLevelMonsterSpawns(int levelNumber)
         }
     }
 }
+
+void Level::drawRock(Vector2 position, Vector2 size)
+{
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+
+    // Draw main rock body
+    DrawCircleV(center, size.x / 2 - 2, GRAY);
+
+    // Draw some texture/details on the rock
+    DrawCircleV({center.x - 4, center.y - 4}, 2, DARKGRAY);
+    DrawCircleV({center.x + 4, center.y - 4}, 2, DARKGRAY);
+    DrawCircleV({center.x, center.y + 4}, 2, DARKGRAY);
+}
+
+void Level::drawCharacterSprite(Vector2 position, Vector2 size, Color bodyColor, Color accentColor, Direction direction)
+{
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+
+    // Draw main body
+    DrawCircleV(center, size.x / 2 - 2, bodyColor);
+
+    // Draw accent details
+    DrawCircleV({center.x, center.y - 4}, size.x / 4, accentColor);
+
+    // Draw eyes
+    DrawCircleV({center.x - 6, center.y - 2}, 3, WHITE);
+    DrawCircleV({center.x + 6, center.y - 2}, 3, WHITE);
+    DrawCircleV({center.x - 6, center.y - 2}, 1, BLACK); // Left pupil
+    DrawCircleV({center.x + 6, center.y - 2}, 1, BLACK); // Right pupil
+
+    // Draw mouth
+    DrawRectangle(static_cast<int>(center.x - 4), static_cast<int>(center.y + 4), 8, 2, BLACK);
+
+    // Draw drill (based on direction)
+    Vector2 drillPos = center;
+    switch (direction)
+    {
+    case Direction::UP:
+        drillPos.y -= size.y / 2 + 5;
+        DrawRectangle(static_cast<int>(drillPos.x - 2), static_cast<int>(drillPos.y), 4, 8, YELLOW);
+        break;
+    case Direction::DOWN:
+        drillPos.y += size.y / 2 + 5;
+        DrawRectangle(static_cast<int>(drillPos.x - 2), static_cast<int>(drillPos.y - 8), 4, 8, YELLOW);
+        break;
+    case Direction::LEFT:
+        drillPos.x -= size.x / 2 + 5;
+        DrawRectangle(static_cast<int>(drillPos.x), static_cast<int>(drillPos.y - 2), 8, 4, YELLOW);
+        break;
+    case Direction::RIGHT:
+        drillPos.x += size.x / 2 + 5;
+        DrawRectangle(static_cast<int>(drillPos.x - 8), static_cast<int>(drillPos.y - 2), 8, 4, YELLOW);
+        break;
+    default:
+        break;
+    }
+}

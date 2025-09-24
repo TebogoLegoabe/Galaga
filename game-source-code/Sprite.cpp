@@ -203,6 +203,48 @@ void Sprite::drawCharacterSprite(Vector2 position, Vector2 size, Color bodyColor
     drawDirectionIndicator(center, direction, 3, WHITE);
 }
 
+void Sprite::drawRock(Vector2 position, Vector2 size)
+{
+    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+    float radius = size.x / 2 - 2;
+
+    // Define rock colors
+    Color baseRock = {120, 120, 120, 255};  // Medium gray
+    Color darkRock = {80, 80, 80, 255};     // Dark gray
+    Color lightRock = {160, 160, 160, 255}; // Light gray
+    Color veryDarkRock = {50, 50, 50, 255}; // Very dark gray
+
+    // Draw main rock body as an irregular shape using multiple circles
+    DrawCircleV({center.x - 2, center.y - 2}, radius, baseRock);
+    DrawCircleV({center.x + 1, center.y + 1}, radius - 3, darkRock);
+    DrawCircleV({center.x - 1, center.y + 2}, radius - 5, baseRock);
+
+    // Add rock texture with smaller circles
+    DrawCircleV({center.x - 6, center.y - 4}, 3, lightRock);
+    DrawCircleV({center.x + 4, center.y - 6}, 2, darkRock);
+    DrawCircleV({center.x + 2, center.y + 4}, 2, veryDarkRock);
+    DrawCircleV({center.x - 4, center.y + 6}, 2, lightRock);
+
+    // Add some angular edges to make it look more rock-like
+    Vector2 topLeft = {position.x + 2, position.y + 2};
+    Vector2 topRight = {position.x + size.x - 2, position.y + 4};
+    Vector2 bottomLeft = {position.x + 4, position.y + size.y - 2};
+    Vector2 bottomRight = {position.x + size.x - 4, position.y + size.y - 2};
+
+    // Draw rock edges/facets
+    DrawTriangle(topLeft, {center.x - 8, center.y - 2}, {center.x - 2, center.y - 8}, darkRock);
+    DrawTriangle(topRight, {center.x + 2, center.y - 8}, {center.x + 8, center.y - 2}, lightRock);
+    DrawTriangle(bottomLeft, {center.x - 8, center.y + 2}, {center.x - 2, center.y + 8}, veryDarkRock);
+    DrawTriangle(bottomRight, {center.x + 8, center.y + 2}, {center.x + 2, center.y + 8}, baseRock);
+
+    // Add some small highlight spots to make it look more 3D
+    DrawCircleV({center.x - 3, center.y - 3}, 1, WHITE);
+    DrawCircleV({center.x + 5, center.y - 1}, 1, Color{200, 200, 200, 255});
+
+    // Add a subtle outline
+    DrawCircleLinesV(center, radius + 1, veryDarkRock);
+}
+
 void Sprite::drawEyes(Vector2 center, float eyeSize, Color eyeColor)
 {
     float eyeOffset = 6.0f;

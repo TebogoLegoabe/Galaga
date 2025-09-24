@@ -1,4 +1,7 @@
 #include "Grid.h"
+#include "Sprite.h"
+#include <raylib-cpp.hpp>
+#include "Level.h"
 
 Grid::Grid(int gridWidth, int gridHeight, int tileSize)
     : width(gridWidth), height(gridHeight), tileSize(tileSize)
@@ -93,6 +96,7 @@ void Grid::drawTiles() const
             Rectangle tileRect = {worldPos.x, worldPos.y,
                                   static_cast<float>(tileSize),
                                   static_cast<float>(tileSize)};
+            Vector2 tileSize2D = {static_cast<float>(tileSize), static_cast<float>(tileSize)};
 
             switch (getTile(x, y))
             {
@@ -103,7 +107,8 @@ void Grid::drawTiles() const
                 DrawRectangleRec(tileRect, BLACK);
                 break;
             case TileType::ROCK:
-                DrawRectangleRec(tileRect, GRAY);
+                // Use the Sprite class to draw a nice rock instead of a gray rectangle
+                Sprite::drawRock(worldPos, tileSize2D);
                 break;
             }
         }

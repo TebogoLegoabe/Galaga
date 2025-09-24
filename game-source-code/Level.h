@@ -105,6 +105,23 @@ private:
     void setMonsterSpawns();
 
     /**
+     * @brief Draw a rock
+     * @param position Position to draw at
+     * @param size Size of the rock
+     */
+    static void drawRock(Vector2 position, Vector2 size);
+
+    /**
+     * @brief Draw a simple character sprite with customizable colors
+     * @param position Position to draw at
+     * @param size Size of the sprite
+     * @param bodyColor Main body color
+     * @param accentColor Accent/detail color
+     * @param direction Direction facing (for asymmetric sprites)
+     */
+    static void drawCharacterSprite(Vector2 position, Vector2 size, Color bodyColor, Color accentColor, Direction direction = Direction::RIGHT);
+
+    /**
      * @brief Set monster spawns for a specific level
      * @param levelNumber Level number
      */
