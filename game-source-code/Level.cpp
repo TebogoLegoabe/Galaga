@@ -114,6 +114,8 @@ void Level::placeRocks()
         {12, 6},  // Above center area
         {21, 9},  // Right side
         {13, 17}, // Above bottom tunnel
+        {6, 10},  // Left side
+        {16, 14}  // Mid-right
     };
 
     for (const auto &gridPos : rockGridPositions)
