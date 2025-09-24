@@ -7,6 +7,13 @@ Level::Level()
 
 void Level::initializeDefault()
 {
+    // Clear any existing data
+    monsterSpawnPositions.clear();
+    rockPositions.clear();
+
+    // Reset the grid completely (this will fill everything with earth again)
+    grid = Grid(); // Create a fresh grid
+
     // Set player start position (center top area)
     playerStartPosition = grid.gridToWorld(14, 2);
 
@@ -101,16 +108,12 @@ void Level::createInitialTunnels()
 
 void Level::placeRocks()
 {
-    // Place rocks in strategic positions that can fall and crush monsters
+    // Keep rocks minimal and strategic for first level
+    // Later levels could have more rocks
     std::vector<Vector2> rockGridPositions = {
-        /*{12, 6},  // Above center area
-        {6, 10},  // Left side
+        {12, 6},  // Above center area
         {21, 9},  // Right side
-        {10, 13}, // Mid-left
-        {16, 14}, // Mid-right
         {13, 17}, // Above bottom tunnel
-        {25, 13}, // Far right
-        {2, 12}   // Far left */
     };
 
     for (const auto &gridPos : rockGridPositions)
@@ -128,19 +131,21 @@ void Level::setMonsterSpawns()
     // Clear any existing spawns
     monsterSpawnPositions.clear();
 
-    // Add one monster to the left tunnel (x = 2-7, y = 10)
-    Vector2 leftTunnelSpawn = grid.gridToWorld(2, 10);
-    // monsterSpawnPositions.push_back(leftTunnelSpawn);
-
+    // Level 1: Start with just 2-3 monsters in predictable locations
     // Add one monster to the right tunnel (x = 19-26, y = 15)
     Vector2 rightTunnelSpawn = grid.gridToWorld(22, 15);
     monsterSpawnPositions.push_back(rightTunnelSpawn);
 
-    // Additional spawns can be added here as needed
-    Vector2 thirdTunnelSpawn = grid.gridToWorld(15, 5);
-    monsterSpawnPositions.push_back(thirdTunnelSpawn);
+    // Add one monster to the bottom tunnel (x = 8-20, y = 19)
     Vector2 bottomTunnelSpawn = grid.gridToWorld(10, 19);
     monsterSpawnPositions.push_back(bottomTunnelSpawn);
+
+    // Add one monster to the left tunnel (x = 2-7, y = 10)
+    Vector2 leftTunnelSpawn = grid.gridToWorld(4, 10);
+    monsterSpawnPositions.push_back(leftTunnelSpawn);
+
+    // That's it - just 3 monsters for a clean, manageable first level
+    // Additional levels can add more monsters
 }
 
 bool Level::isSuitableForMonsterSpawn(int gridX, int gridY, const std::vector<Vector2> &existingSpawns) const
@@ -168,4 +173,98 @@ bool Level::isSuitableForMonsterSpawn(int gridX, int gridY, const std::vector<Ve
     }
 
     return true;
+}
+
+// Add new method for level progression
+void Level::initializeLevel(int levelNumber)
+{
+    // Clear existing data
+    monsterSpawnPositions.clear();
+    rockPositions.clear();
+
+    // Create fresh grid
+    grid = Grid();
+
+    // Player always starts in the same position
+    playerStartPosition = grid.gridToWorld(14, 2);
+
+    // Create the same tunnel layout for consistency
+    createInitialTunnels();
+
+    // Vary rocks and monsters based on level
+    placeLevelRocks(levelNumber);
+    setLevelMonsterSpawns(levelNumber);
+}
+
+void Level::placeLevelRocks(int levelNumber)
+{
+    // Base rock positions
+    std::vector<Vector2> baseRocks = {
+        {12, 6},  // Above center area
+        {21, 9},  // Right side
+        {13, 17}, // Above bottom tunnel
+    };
+
+    // Add more rocks for higher levels
+    if (levelNumber >= 2)
+    {
+        baseRocks.push_back({6, 10});  // Left side
+        baseRocks.push_back({16, 14}); // Mid-right
+    }
+
+    if (levelNumber >= 3)
+    {
+        baseRocks.push_back({25, 13}); // Far right
+        baseRocks.push_back({2, 12});  // Far left
+    }
+
+    for (const auto &gridPos : baseRocks)
+    {
+        int x = static_cast<int>(gridPos.x);
+        int y = static_cast<int>(gridPos.y);
+
+        grid.setTile(x, y, TileType::ROCK);
+        rockPositions.push_back(grid.gridToWorld(x, y));
+    }
+}
+
+void Level::setLevelMonsterSpawns(int levelNumber)
+{
+    monsterSpawnPositions.clear();
+
+    // Base monster positions (always present)
+    std::vector<Vector2> baseSpawns = {
+        grid.gridToWorld(22, 15), // Right tunnel
+        grid.gridToWorld(10, 19), // Bottom tunnel
+        grid.gridToWorld(4, 10),  // Left tunnel
+    };
+
+    // Add base monsters
+    for (const auto &spawn : baseSpawns)
+    {
+        monsterSpawnPositions.push_back(spawn);
+    }
+
+    // Add more monsters for higher levels
+    if (levelNumber >= 2)
+    {
+        monsterSpawnPositions.push_back(grid.gridToWorld(15, 5));  // Center vertical
+        monsterSpawnPositions.push_back(grid.gridToWorld(24, 15)); // Far right
+    }
+
+    if (levelNumber >= 3)
+    {
+        monsterSpawnPositions.push_back(grid.gridToWorld(6, 10));  // Left area
+        monsterSpawnPositions.push_back(grid.gridToWorld(18, 19)); // Bottom right
+    }
+
+    // Cap at reasonable number even for very high levels
+    if (levelNumber >= 4)
+    {
+        int maxMonsters = std::min(8, 3 + levelNumber);
+        if (monsterSpawnPositions.size() > static_cast<size_t>(maxMonsters))
+        {
+            monsterSpawnPositions.resize(maxMonsters);
+        }
+    }
 }

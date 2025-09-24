@@ -23,6 +23,12 @@ public:
     void initializeDefault();
 
     /**
+     * @brief Initialize a specific level number
+     * @param levelNumber The level number (1, 2, 3, etc.)
+     */
+    void initializeLevel(int levelNumber);
+
+    /**
      * @brief Load level from file (future implementation)
      * @param filename Path to the level file
      * @return true if successfully loaded
@@ -88,9 +94,21 @@ private:
     void placeRocks();
 
     /**
+     * @brief Place rocks for a specific level
+     * @param levelNumber Level number
+     */
+    void placeLevelRocks(int levelNumber);
+
+    /**
      * @brief Set monster spawn positions (one per tunnel)
      */
     void setMonsterSpawns();
+
+    /**
+     * @brief Set monster spawns for a specific level
+     * @param levelNumber Level number
+     */
+    void setLevelMonsterSpawns(int levelNumber);
 
     /**
      * @brief Check if a position is in a tunnel and not occupied
