@@ -4,6 +4,7 @@
 
 const float Player::SHOOT_COOLDOWN_TIME = 0.5f; // Half second cooldown
 const int Player::MAX_LIVES = 3;
+const float Player::MOVEMENT_DELAY = 0.15f;
 
 Player::Player(Vector2 startPos)
     : GameObject(startPos, {28, 28}), // Slightly smaller than tile size for better fit
@@ -12,7 +13,9 @@ Player::Player(Vector2 startPos)
       targetPosition(startPos),
       isMoving(false),
       harpoon(std::make_unique<Harpoon>()),
-      shootCooldown(0.0f)
+      shootCooldown(0.0f),
+      lives(MAX_LIVES),
+      movementTimer(0.0f)
 {
 }
 
@@ -21,13 +24,20 @@ void Player::update()
     updateMovement();
     updateShooting();
 
+    // Update movement timer
+    if (movementTimer > 0.0f)
+    {
+        movementTimer -= GetFrameTime();
+        if (movementTimer < 0.0f)
+        {
+            movementTimer = 0.0f;
+        }
+    }
+
     // Update harpoon
     if (harpoon)
     {
         harpoon->update();
-
-        // Check if harpoon should be deactivated
-        // This will be handled by collision detection in GamePlay
     }
 }
 
@@ -47,8 +57,24 @@ void Player::draw()
 
 bool Player::move(Direction direction, Grid &grid)
 {
-    if (direction == Direction::NONE || isMoving)
+    if (direction == Direction::NONE)
         return false;
+
+    // If we're currently moving to a target, allow direction change but wait for movement timer
+    if (isMoving)
+    {
+        // Update facing direction even while moving
+        facingDirection = direction;
+        return false;
+    }
+
+    // Check movement timer to prevent too rapid movement
+    if (movementTimer > 0.0f)
+    {
+        // Update facing direction even when on cooldown
+        facingDirection = direction;
+        return false;
+    }
 
     // Calculate new position based on direction
     Vector2 newPos = position;
@@ -74,7 +100,11 @@ bool Player::move(Direction direction, Grid &grid)
 
     // Check if the new position is valid
     if (!canMoveTo(newPos, grid))
+    {
+        // Update facing direction even if we can't move
+        facingDirection = direction;
         return false;
+    }
 
     // Update facing direction
     facingDirection = direction;
@@ -82,6 +112,9 @@ bool Player::move(Direction direction, Grid &grid)
     // Set target position and start moving
     targetPosition = newPos;
     isMoving = true;
+
+    // Set movement timer
+    movementTimer = MOVEMENT_DELAY;
 
     // Dig tunnel at the new position
     Vector2 gridPos = grid.worldToGrid(newPos);

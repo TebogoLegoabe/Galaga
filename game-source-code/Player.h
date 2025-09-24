@@ -130,8 +130,10 @@ private:
     Vector2 targetPosition;                 // Target position for smooth movement
     bool isMoving;                          // Whether the player is currently moving
     std::unique_ptr<Harpoon> harpoon;       // Player's harpoon weapon
+    float movementTimer;                    // Timer to control movement frequency
     float shootCooldown;                    // Cooldown timer for shooting
     static const float SHOOT_COOLDOWN_TIME; // Cooldown duration
+    static const float MOVEMENT_DELAY;      // Delay between tile movements
 
     void updateMovement();
     void updateShooting();
