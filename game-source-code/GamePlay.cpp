@@ -215,8 +215,6 @@ void GamePlay::drawHUD()
         if (monster->isActive() && !monster->isDead())
             aliveMonsters++;
     }
-    const char *monsterText = TextFormat("Monsters Remaining: %d", aliveMonsters);
-    DrawText(monsterText, 10, 55, 15, WHITE);
 
     // Draw lives remaining
     const char *livesText = "Lives:";
@@ -230,17 +228,6 @@ void GamePlay::drawHUD()
         DrawCircleV({static_cast<float>(livesStartX + i * 25), static_cast<float>(livesY)}, 8, BLUE);
         DrawCircleV({static_cast<float>(livesStartX + i * 25), static_cast<float>(livesY)}, 3, WHITE); // Direction indicator
     }
-
-    // Draw controls
-    const char *controls = "ARROW KEYS/WASD: Move and dig | SPACE: Shoot harpoon";
-    DrawText(controls, 10, GetScreenHeight() - 65, 15, WHITE);
-
-    const char *harpoonStatus = player.canShoot() ? "Harpoon: READY" : "Harpoon: RELOADING...";
-    Color harpoonColor = player.canShoot() ? GREEN : ORANGE;
-    DrawText(harpoonStatus, 10, 95, 15, harpoonColor);
-
-    const char *instruction = "Press ESC to return to menu";
-    DrawText(instruction, 10, GetScreenHeight() - 25, 15, WHITE);
 }
 
 void GamePlay::handlePlayerMovement()

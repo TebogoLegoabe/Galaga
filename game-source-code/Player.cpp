@@ -1,4 +1,5 @@
 #include "Player.h"
+#include "Sprite.h"
 #include <cmath>
 
 const float Player::SHOOT_COOLDOWN_TIME = 0.5f; // Half second cooldown
@@ -35,36 +36,7 @@ void Player::draw()
     if (!active)
         return;
 
-    // Draw the player as a circle for now (can be replaced with sprite later)
-    Color playerColor = BLUE;
-
-    // Draw main body
-    DrawCircleV(Vector2{position.x + size.x / 2, position.y + size.y / 2},
-                size.x / 2 - 2, playerColor);
-
-    // Draw a simple direction indicator
-    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
-    Vector2 directionIndicator = center;
-
-    switch (facingDirection)
-    {
-    case Direction::UP:
-        directionIndicator.y -= size.y / 3;
-        break;
-    case Direction::DOWN:
-        directionIndicator.y += size.y / 3;
-        break;
-    case Direction::LEFT:
-        directionIndicator.x -= size.x / 3;
-        break;
-    case Direction::RIGHT:
-        directionIndicator.x += size.x / 3;
-        break;
-    default:
-        break;
-    }
-
-    DrawCircleV(directionIndicator, 4, WHITE);
+    Sprite::drawDigDug(position, facingDirection, size);
 
     // Draw harpoon if active
     if (harpoon)
