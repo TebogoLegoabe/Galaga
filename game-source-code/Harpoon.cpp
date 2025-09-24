@@ -1,4 +1,5 @@
 #include "Harpoon.h"
+#include "Sprite.h"
 #include <cmath>
 
 Harpoon::Harpoon(Vector2 startPos, Direction dir)
@@ -31,48 +32,8 @@ void Harpoon::draw()
     if (!active || !fired)
         return;
 
-    Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
-
-    // Draw harpoon based on direction
-    switch (direction)
-    {
-    case Direction::UP:
-        // Vertical harpoon pointing up
-        DrawRectangle(position.x + 2, position.y, 4, size.y, YELLOW);
-        DrawTriangle({center.x, position.y},
-                     {position.x, position.y + 4},
-                     {position.x + size.x, position.y + 4}, ORANGE);
-        break;
-
-    case Direction::DOWN:
-        // Vertical harpoon pointing down
-        DrawRectangle(position.x + 2, position.y, 4, size.y, YELLOW);
-        DrawTriangle({center.x, position.y + size.y},
-                     {position.x, position.y + size.y - 4},
-                     {position.x + size.x, position.y + size.y - 4}, ORANGE);
-        break;
-
-    case Direction::LEFT:
-        // Horizontal harpoon pointing left
-        DrawRectangle(position.x, position.y + 2, size.x, 4, YELLOW);
-        DrawTriangle({position.x, center.y},
-                     {position.x + 4, position.y},
-                     {position.x + 4, position.y + size.y}, ORANGE);
-        break;
-
-    case Direction::RIGHT:
-        // Horizontal harpoon pointing right
-        DrawRectangle(position.x, position.y + 2, size.x, 4, YELLOW);
-        DrawTriangle({position.x + size.x, center.y},
-                     {position.x + size.x - 4, position.y},
-                     {position.x + size.x - 4, position.y + size.y}, ORANGE);
-        break;
-
-    default:
-        // Default circle if direction is unknown
-        DrawCircleV(center, size.x / 2, YELLOW);
-        break;
-    }
+    // Use the Sprite class to draw the harpoon
+    Sprite::drawHarpoon(position, direction, size);
 }
 
 void Harpoon::fire(Vector2 startPos, Direction dir)
@@ -110,7 +71,7 @@ bool Harpoon::shouldDestroy(const Grid &grid) const
     if (!isWithinBounds(grid))
         return true;
 
-    // Check if hit a rock
+    // Check if hit a rock or earth (can only travel through tunnels)
     Vector2 gridPos = grid.worldToGrid(position);
     int gridX = static_cast<int>(gridPos.x);
     int gridY = static_cast<int>(gridPos.y);
@@ -118,7 +79,8 @@ bool Harpoon::shouldDestroy(const Grid &grid) const
     if (grid.isValidPosition(gridX, gridY))
     {
         TileType tileType = grid.getTile(gridX, gridY);
-        if (tileType == TileType::ROCK)
+        // Harpoon should be destroyed if it hits rock or earth (not tunnel)
+        if (tileType == TileType::ROCK || tileType == TileType::EARTH)
         {
             return true;
         }
@@ -147,24 +109,29 @@ void Harpoon::setSpeed(float newSpeed)
 void Harpoon::updateMovement()
 {
     Vector2 oldPosition = position;
+    Vector2 newPosition = position;
 
+    // Calculate the new position based on direction
     switch (direction)
     {
     case Direction::UP:
-        position.y -= speed;
+        newPosition.y -= speed;
         break;
     case Direction::DOWN:
-        position.y += speed;
+        newPosition.y += speed;
         break;
     case Direction::LEFT:
-        position.x -= speed;
+        newPosition.x -= speed;
         break;
     case Direction::RIGHT:
-        position.x += speed;
+        newPosition.x += speed;
         break;
     default:
         break;
     }
+
+    // Update position (the shouldDestroy check in GamePlay will handle stopping the harpoon)
+    position = newPosition;
 
     // Calculate travel distance
     float dx = position.x - oldPosition.x;
