@@ -17,6 +17,9 @@ void GamePlay::init()
     // Initialize the level
     currentLevel.initializeDefault();
 
+    // Initialize rocks for the level
+    initializeRocks();
+
     // Initialize the player at the level's start position
     player.reset(currentLevel.getPlayerStartPosition());
 
@@ -67,6 +70,12 @@ void GamePlay::update()
         // Update monsters
         updateMonsters();
 
+        // Update rocks after digging changes
+        updateRocks();
+
+        if (gameOver || levelComplete)
+            return;
+
         // Update game logic
         updateGameLogic();
     }
@@ -79,6 +88,9 @@ void GamePlay::draw()
 
     // Draw the level
     currentLevel.draw();
+
+    // Draw rocks (falling ones are handled separately)
+    drawRocks();
 
     // Draw the player
     player.draw();
@@ -285,6 +297,22 @@ void GamePlay::initializeMonsters()
     }
 }
 
+void GamePlay::initializeRocks()
+{
+    rocks.clear();
+
+    Grid &grid = currentLevel.getGrid();
+    const std::vector<Vector2> rockPositions = currentLevel.getRockPositions();
+
+    rocks.reserve(rockPositions.size());
+    for (const Vector2 &pos : rockPositions)
+    {
+        Rock rock(pos);
+        rock.setGrid(&grid);
+        rocks.push_back(rock);
+    }
+}
+
 void GamePlay::updateMonsters()
 {
     for (auto &monster : monsters)
@@ -311,6 +339,67 @@ void GamePlay::drawMonsters()
         {
             monster->draw();
         }
+    }
+}
+
+void GamePlay::updateRocks()
+{
+    if (rocks.empty())
+        return;
+
+    Grid &grid = currentLevel.getGrid();
+    bool playerCrushedThisFrame = false;
+
+    for (auto &rock : rocks)
+    {
+        if (!rock.isActive())
+            continue;
+
+        rock.setGrid(&grid);
+        rock.update();
+
+        if (!rock.isFalling())
+            continue;
+
+        Rectangle rockBounds = rock.getBounds();
+
+        for (auto &monster : monsters)
+        {
+            if (monster->isActive() && !monster->isDead())
+            {
+                if (CheckCollisionRecs(rockBounds, monster->getBounds()))
+                {
+                    monster->setState(MonsterState::DEAD);
+                }
+            }
+        }
+
+        if (!playerCrushedThisFrame && player.isActive())
+        {
+            if (CheckCollisionRecs(rockBounds, player.getBounds()))
+            {
+                playerCrushedThisFrame = true;
+                bool stillAlive = player.loseLife();
+
+                if (!stillAlive)
+                {
+                    gameOver = true;
+                    playerWon = false;
+                }
+                else
+                {
+                    respawnPlayer();
+                }
+            }
+        }
+    }
+}
+
+void GamePlay::drawRocks()
+{
+    for (Rock &rock : rocks)
+    {
+        rock.draw();
     }
 }
 
