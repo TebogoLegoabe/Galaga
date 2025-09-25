@@ -10,6 +10,7 @@
 #include "Harpoon.h"
 #include "InputHandler.h"
 #include "CollisionManager.h"
+#include "Rock.h"
 #include <algorithm>
 
 /**
@@ -93,6 +94,7 @@ private:
     Level currentLevel;                             // The current level
     Player player;                                  // The player character
     std::vector<std::unique_ptr<Monster>> monsters; // The monsters
+    std::vector<Rock> rocks;                        // Falling rocks
     bool gameOver;                                  // Game over flag
     bool levelComplete;                             // Level complete flag
     bool playerWon;                                 // Player won flag
@@ -105,6 +107,9 @@ private:
     void initializeMonsters();
     void updateMonsters();
     void drawMonsters();
+    void initializeRocks();
+    void updateRocks();
+    void drawRocks();
     void checkPlayerMonsterCollisions();
     void checkHarpoonMonsterCollisions();
     bool checkCollision(const GameObject &obj1, const GameObject &obj2) const;

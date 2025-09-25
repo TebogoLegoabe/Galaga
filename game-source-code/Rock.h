@@ -34,15 +34,15 @@ public:
     void update() override;
 
     /**
+     * @brief Associate the rock with a grid instance
+     * @param gridPtr Pointer to the active grid
+     */
+    void setGrid(Grid *gridPtr);
+
+    /**
      * @brief Draw the rock
      */
     void draw() override;
-
-    /**
-     * @brief Check if rock should start falling
-     * @param grid Reference to the game grid
-     */
-    void checkShouldFall(const Grid &grid);
 
     /**
      * @brief Get the rock's current state
@@ -84,17 +84,11 @@ public:
 private:
     RockState currentState;             // Current rock state
     float speed;                        // Fall speed in pixels per frame
-    float fallDelay;                    // Delay before starting to fall
     float fallTimer;                    // Timer for fall delay
     Vector2 originalPosition;           // Original position when placed
     static const float FALL_DELAY_TIME; // How long to wait before falling
     static const float FALL_SPEED;      // How fast rocks fall
-
-    /**
-     * @brief Update falling movement
-     * @param grid Reference to the game grid
-     */
-    void updateFalling(const Grid &grid);
+    Grid *gridRef;                      // Active grid reference
 
     /**
      * @brief Check if there's solid ground below
@@ -102,6 +96,11 @@ private:
      * @return true if there's solid ground below
      */
     bool hasGroundBelow(const Grid &grid) const;
+
+    /**
+     * @brief Begin falling by clearing supporting tile
+     */
+    void beginFalling();
 };
 
 #endif // ROCK_H

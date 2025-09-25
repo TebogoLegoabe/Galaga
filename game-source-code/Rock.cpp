@@ -9,33 +9,47 @@ Rock::Rock(Vector2 startPos)
     : GameObject(startPos, {32, 32}), // Same size as tile
       currentState(RockState::STATIONARY),
       speed(FALL_SPEED),
-      fallDelay(0.0f),
       fallTimer(0.0f),
-      originalPosition(startPos)
+      originalPosition(startPos),
+      gridRef(nullptr)
 {
 }
 
 void Rock::update()
 {
-    if (!active)
+    if (!active || gridRef == nullptr)
         return;
 
     switch (currentState)
     {
     case RockState::STATIONARY:
-        // Just sitting there, waiting
+        if (!hasGroundBelow(*gridRef))
+        {
+            beginFalling();
+        }
         break;
 
     case RockState::FALLING:
-        // Update fall timer
         if (fallTimer < FALL_DELAY_TIME)
         {
             fallTimer += GetFrameTime();
         }
         else
         {
-            // Start falling
             position.y += speed;
+
+            if (hasGroundBelow(*gridRef))
+            {
+                Vector2 gridPos = gridRef->worldToGrid(position);
+                int gridX = static_cast<int>(gridPos.x);
+                int gridY = static_cast<int>(gridPos.y);
+
+                position.y = static_cast<float>(gridY * gridRef->getTileSize());
+                gridRef->setTile(gridX, gridY, TileType::ROCK);
+
+                currentState = RockState::FALLEN;
+                fallTimer = 0.0f;
+            }
         }
         break;
 
@@ -50,69 +64,19 @@ void Rock::draw()
     if (!active)
         return;
 
-    // Use the Sprite class to draw the rock
-    Sprite::drawRock(position, size);
-
-    // Add a visual indicator when rock is about to fall
-    if (currentState == RockState::FALLING && fallTimer < FALL_DELAY_TIME)
-    {
-        // Draw warning indicator (flashing effect)
-        float flashIntensity = (sinf(fallTimer * 10.0f) + 1.0f) / 2.0f; // 0 to 1
-        Color warningColor = {255, static_cast<unsigned char>(255 * flashIntensity), 0, 128};
-
-        // Draw warning outline
-        Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
-        DrawCircleLinesV(center, size.x / 2 + 2, warningColor);
-        DrawCircleLinesV(center, size.x / 2 + 4, warningColor);
-    }
-
-    // Debug: Draw a simple rectangle to verify rocks are being drawn
-    // Remove this after confirming rocks are visible
-    DrawRectangleLinesEx(Rectangle{position.x, position.y, size.x, size.y}, 2, RED);
-}
-
-void Rock::checkShouldFall(const Grid &grid)
-{
-    if (currentState != RockState::STATIONARY)
-        return;
-
-    // Check if the space directly below this rock is now a tunnel
-    Vector2 gridPos = grid.worldToGrid(position);
-    int gridX = static_cast<int>(gridPos.x);
-    int gridY = static_cast<int>(gridPos.y);
-
-    // Check the tile below
-    if (grid.isValidPosition(gridX, gridY + 1))
-    {
-        TileType tileBelow = grid.getTile(gridX, gridY + 1);
-        if (tileBelow == TileType::TUNNEL)
-        {
-            // Start falling!
-            currentState = RockState::FALLING;
-            fallTimer = 0.0f;
-        }
-    }
-}
-
-void Rock::updateFalling(const Grid &grid)
-{
     if (currentState != RockState::FALLING)
         return;
 
-    // Check if we should stop falling
-    if (!hasGroundBelow(grid))
-    {
-        // Keep falling
-        position.y += speed;
-    }
-    else
-    {
-        // Stop falling - snap to grid
-        Vector2 gridPos = grid.worldToGrid(position);
-        int gridY = static_cast<int>(gridPos.y);
-        position.y = static_cast<float>(gridY * grid.getTileSize());
+    Sprite::drawRock(position, size);
 
-        currentState = RockState::FALLEN;
+    if (fallTimer < FALL_DELAY_TIME)
+    {
+        float flashIntensity = (sinf(fallTimer * 10.0f) + 1.0f) / 2.0f; // 0 to 1
+        Color warningColor = {255, static_cast<unsigned char>(255 * flashIntensity), 0, 128};
+
+        Vector2 center = {position.x + size.x / 2, position.y + size.y / 2};
+        DrawCircleLinesV(center, size.x / 2 + 2, warningColor);
+        DrawCircleLinesV(center, size.x / 2 + 4, warningColor);
     }
 }
 
@@ -151,6 +115,12 @@ void Rock::reset(Vector2 startPos)
     currentState = RockState::STATIONARY;
     fallTimer = 0.0f;
     active = true;
+
+    if (gridRef != nullptr)
+    {
+        Vector2 gridPos = gridRef->worldToGrid(position);
+        gridRef->setTile(static_cast<int>(gridPos.x), static_cast<int>(gridPos.y), TileType::ROCK);
+    }
 }
 
 float Rock::getSpeed() const
@@ -161,4 +131,23 @@ float Rock::getSpeed() const
 void Rock::setSpeed(float newSpeed)
 {
     speed = newSpeed;
+}
+
+void Rock::setGrid(Grid *gridPtr)
+{
+    gridRef = gridPtr;
+}
+
+void Rock::beginFalling()
+{
+    if (gridRef == nullptr)
+        return;
+
+    Vector2 gridPos = gridRef->worldToGrid(position);
+    int gridX = static_cast<int>(gridPos.x);
+    int gridY = static_cast<int>(gridPos.y);
+
+    gridRef->setTile(gridX, gridY, TileType::TUNNEL);
+    currentState = RockState::FALLING;
+    fallTimer = 0.0f;
 }
