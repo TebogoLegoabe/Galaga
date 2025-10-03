@@ -1,4 +1,6 @@
 #include "GamePlay.h"
+#include "GreenDragon.h"
+#include "Fire.h"
 
 const float GamePlay::DISEMBODIED_COOLDOWN_TIME = 3.0f; // 3 seconds between disembodied transitions
 
@@ -23,8 +25,9 @@ void GamePlay::init()
     // Reset lives only when starting a completely new game
     player.resetLives();
 
-    // Initialize monsters
+    // Initialize monsters (red monsters and green dragons)
     initializeMonsters();
+    initializeGreenDragons();
 
     // Reset game state
     gameOver = false;
@@ -64,8 +67,9 @@ void GamePlay::update()
         // Update player
         player.update();
 
-        // Update monsters
+        // Update monsters and dragons
         updateMonsters();
+        updateGreenDragons();
 
         // Update game logic
         updateGameLogic();
@@ -83,8 +87,9 @@ void GamePlay::draw()
     // Draw the player
     player.draw();
 
-    // Draw monsters
+    // Draw monsters and dragons
     drawMonsters();
+    drawGreenDragons();
 
     // Draw HUD
     drawHUD();
@@ -140,6 +145,11 @@ std::vector<std::unique_ptr<Monster>> &GamePlay::getMonsters()
     return monsters;
 }
 
+std::vector<std::unique_ptr<GreenDragon>> &GamePlay::getGreenDragons()
+{
+    return greenDragons;
+}
+
 void GamePlay::updateGameLogic()
 {
     // Update player harpoon and check for collisions with monsters
@@ -158,10 +168,13 @@ void GamePlay::updateGameLogic()
         }
     }
 
+    // Check for fire-player collisions
+    checkFirePlayerCollisions();
+
     // Check for collisions between player and monsters
     checkPlayerMonsterCollisions();
 
-    // Check if all monsters are dead (win condition)
+    // Check if all monsters and dragons are dead (win condition)
     if (areAllMonstersDead())
     {
         gameOver = true;
@@ -178,6 +191,7 @@ void GamePlay::checkHarpoonMonsterCollisions()
 
     Rectangle harpoonBounds = harpoon.getBounds();
 
+    // Check collisions with red monsters
     for (auto &monster : monsters)
     {
         if (monster->isActive() && !monster->isDead())
@@ -195,6 +209,64 @@ void GamePlay::checkHarpoonMonsterCollisions()
             }
         }
     }
+
+    // Check collisions with green dragons
+    for (auto &dragon : greenDragons)
+    {
+        if (dragon->isActive() && !dragon->isDead())
+        {
+            Rectangle dragonBounds = dragon->getBounds();
+            if (CheckCollisionRecs(harpoonBounds, dragonBounds))
+            {
+                // Dragon hit by harpoon - kill it
+                dragon->setState(MonsterState::DEAD);
+
+                // Deactivate the harpoon
+                harpoon.deactivate();
+
+                return; // Only hit one monster per frame
+            }
+        }
+    }
+}
+
+void GamePlay::checkFirePlayerCollisions()
+{
+    Rectangle playerBounds = player.getBounds();
+
+    // Check collisions with fire from all dragons
+    for (auto &dragon : greenDragons)
+    {
+        if (dragon->isActive() && !dragon->isDead())
+        {
+            Fire &fire = dragon->getFire();
+            if (fire.isFireActive())
+            {
+                Rectangle fireBounds = fire.getBounds();
+                if (CheckCollisionRecs(playerBounds, fireBounds))
+                {
+                    // Player hit by fire - lose a life
+                    bool stillAlive = player.loseLife();
+
+                    // Deactivate the fire
+                    fire.deactivate();
+
+                    if (!stillAlive)
+                    {
+                        // No lives left - game over
+                        gameOver = true;
+                        playerWon = false;
+                    }
+                    else
+                    {
+                        // Still has lives - respawn player at start position
+                        respawnPlayer();
+                    }
+                    return;
+                }
+            }
+        }
+    }
 }
 
 void GamePlay::drawHUD()
@@ -208,13 +280,20 @@ void GamePlay::drawHUD()
     const char *posText = TextFormat("Grid Position: (%.0f, %.0f)", gridPos.x, gridPos.y);
     DrawText(posText, 10, 35, 15, WHITE);
 
-    // Draw monster count
+    // Draw monster count (including dragons)
     int aliveMonsters = 0;
     for (const auto &monster : monsters)
     {
         if (monster->isActive() && !monster->isDead())
             aliveMonsters++;
     }
+    for (const auto &dragon : greenDragons)
+    {
+        if (dragon->isActive() && !dragon->isDead())
+            aliveMonsters++;
+    }
+    const char *monsterText = TextFormat("Monsters Remaining: %d", aliveMonsters);
+    DrawText(monsterText, 10, 55, 15, WHITE);
 
     // Draw lives remaining
     const char *livesText = "Lives:";
@@ -228,6 +307,17 @@ void GamePlay::drawHUD()
         DrawCircleV({static_cast<float>(livesStartX + i * 25), static_cast<float>(livesY)}, 8, BLUE);
         DrawCircleV({static_cast<float>(livesStartX + i * 25), static_cast<float>(livesY)}, 3, WHITE); // Direction indicator
     }
+
+    // Draw controls
+    const char *controls = "ARROW KEYS/WASD: Move and dig | SPACE: Shoot harpoon";
+    DrawText(controls, 10, GetScreenHeight() - 65, 15, WHITE);
+
+    const char *harpoonStatus = player.canShoot() ? "Harpoon: READY" : "Harpoon: RELOADING...";
+    Color harpoonColor = player.canShoot() ? GREEN : ORANGE;
+    DrawText(harpoonStatus, 10, 95, 15, harpoonColor);
+
+    const char *instruction = "Press ESC to return to menu";
+    DrawText(instruction, 10, GetScreenHeight() - 25, 15, WHITE);
 }
 
 void GamePlay::handlePlayerMovement()
@@ -253,35 +343,74 @@ void GamePlay::initializeMonsters()
     // Get monster spawn positions from the level
     std::vector<Vector2> spawnPositions = currentLevel.getMonsterSpawnPositions();
 
-    // Add additional monster spawns in empty tunnels
-    addMonstersToEmptyTunnels(spawnPositions);
+    // Reserve some positions for green dragons (split spawns)
+    size_t dragonsCount = std::min(spawnPositions.size() / 2, static_cast<size_t>(2)); // Max 2 dragons
 
-    // Create monsters at all spawn positions
-    for (const Vector2 &spawnPos : spawnPositions)
+    // Use remaining positions for red monsters
+    for (size_t i = dragonsCount; i < spawnPositions.size(); i++)
     {
-        auto monster = std::make_unique<Monster>(spawnPos, MonsterState::IN_TUNNEL);
+        auto monster = std::make_unique<Monster>(spawnPositions[i], MonsterState::IN_TUNNEL);
         monsters.push_back(std::move(monster));
     }
 
-    // Ensure no monsters are too close to player (safety check)
-    Vector2 playerStart = currentLevel.getPlayerStartPosition();
+    // Add additional monster spawns in empty tunnels if needed
+    addMonstersToEmptyTunnels(spawnPositions);
 
-    // Remove monsters that are too close to player
-    monsters.erase(
-        std::remove_if(monsters.begin(), monsters.end(),
-                       [&playerStart](const std::unique_ptr<Monster> &monster)
-                       {
-                           Vector2 monsterPos = monster->getPosition();
-                           float distance = std::sqrt(std::pow(monsterPos.x - playerStart.x, 2) +
-                                                      std::pow(monsterPos.y - playerStart.y, 2));
-                           return distance < 96.0f; // Remove if closer than 3 tiles
-                       }),
-        monsters.end());
-
-    // Ensure we have at least 3 monsters
-    if (monsters.size() < 3)
+    // Ensure we have at least 2 red monsters
+    if (monsters.size() < 2)
     {
         addMonstersToDistantTunnels();
+    }
+}
+
+void GamePlay::initializeGreenDragons()
+{
+    greenDragons.clear();
+
+    // Get spawn positions from the level
+    std::vector<Vector2> spawnPositions = currentLevel.getMonsterSpawnPositions();
+
+    // Use first few positions for green dragons
+    size_t dragonsCount = std::min(spawnPositions.size() / 2, static_cast<size_t>(2)); // Max 2 dragons
+
+    for (size_t i = 0; i < dragonsCount && i < spawnPositions.size(); i++)
+    {
+        auto dragon = std::make_unique<GreenDragon>(spawnPositions[i]);
+        greenDragons.push_back(std::move(dragon));
+    }
+
+    // Add additional green dragon spawns if needed
+    addGreenDragonsToTunnels(spawnPositions);
+
+    // Ensure we have at least 1 green dragon
+    if (greenDragons.empty())
+    {
+        // Find a suitable spawn position far from player
+        Vector2 playerStart = currentLevel.getPlayerStartPosition();
+        const Grid &grid = currentLevel.getGrid();
+
+        // Try to find a tunnel position that's far from player
+        for (int y = 0; y < grid.getHeight(); y++)
+        {
+            for (int x = 0; x < grid.getWidth(); x++)
+            {
+                if (grid.isTunnel(x, y))
+                {
+                    Vector2 worldPos = grid.gridToWorld(x, y);
+                    float distance = std::sqrt(std::pow(worldPos.x - playerStart.x, 2) +
+                                               std::pow(worldPos.y - playerStart.y, 2));
+
+                    if (distance >= 128.0f) // At least 4 tiles away
+                    {
+                        auto dragon = std::make_unique<GreenDragon>(worldPos);
+                        greenDragons.push_back(std::move(dragon));
+                        break;
+                    }
+                }
+            }
+            if (!greenDragons.empty())
+                break;
+        }
     }
 }
 
@@ -303,6 +432,31 @@ void GamePlay::updateMonsters()
     }
 }
 
+void GamePlay::updateGreenDragons()
+{
+    for (auto &dragon : greenDragons)
+    {
+        if (dragon->isActive() && !dragon->isDead())
+        {
+            // Update dragon
+            dragon->update();
+
+            // Check if dragon fire should be destroyed
+            Fire &fire = dragon->getFire();
+            if (fire.isFireActive() && fire.shouldDestroy(currentLevel.getGrid()))
+            {
+                fire.deactivate();
+            }
+
+            // Update dragon AI with disembodied restrictions
+            bool canBecomeDisembodied = canMonsterBecomeDisembodied();
+            dragon->updateAI(player, currentLevel.getGrid(), canBecomeDisembodied,
+                             [this]()
+                             { notifyMonsterBecameDisembodied(); });
+        }
+    }
+}
+
 void GamePlay::drawMonsters()
 {
     for (const auto &monster : monsters)
@@ -314,8 +468,20 @@ void GamePlay::drawMonsters()
     }
 }
 
+void GamePlay::drawGreenDragons()
+{
+    for (const auto &dragon : greenDragons)
+    {
+        if (dragon->isActive())
+        {
+            dragon->draw();
+        }
+    }
+}
+
 void GamePlay::checkPlayerMonsterCollisions()
 {
+    // Check collisions with red monsters
     for (auto &monster : monsters)
     {
         if (monster->isActive() && !monster->isDead())
@@ -323,9 +489,35 @@ void GamePlay::checkPlayerMonsterCollisions()
             if (checkCollision(player, *monster))
             {
                 // Player collided with monster - lose a life
-                bool stillAlive = player.loseLife(); // Decrements lives by 1
+                bool stillAlive = player.loseLife();
 
-                if (!stillAlive) // This means lives == 0
+                if (!stillAlive)
+                {
+                    // No lives left - game over
+                    gameOver = true;
+                    playerWon = false;
+                }
+                else
+                {
+                    // Still has lives - respawn player at start position
+                    respawnPlayer();
+                }
+                return;
+            }
+        }
+    }
+
+    // Check collisions with green dragons
+    for (auto &dragon : greenDragons)
+    {
+        if (dragon->isActive() && !dragon->isDead())
+        {
+            if (checkCollision(player, *dragon))
+            {
+                // Player collided with dragon - lose a life
+                bool stillAlive = player.loseLife();
+
+                if (!stillAlive)
                 {
                     // No lives left - game over
                     gameOver = true;
@@ -352,6 +544,7 @@ bool GamePlay::checkCollision(const GameObject &obj1, const GameObject &obj2) co
 
 bool GamePlay::areAllMonstersDead() const
 {
+    // Check red monsters
     for (const auto &monster : monsters)
     {
         if (monster->isActive() && !monster->isDead())
@@ -359,6 +552,16 @@ bool GamePlay::areAllMonstersDead() const
             return false;
         }
     }
+
+    // Check green dragons
+    for (const auto &dragon : greenDragons)
+    {
+        if (dragon->isActive() && !dragon->isDead())
+        {
+            return false;
+        }
+    }
+
     return true;
 }
 
@@ -400,9 +603,10 @@ void GamePlay::addMonstersToEmptyTunnels(std::vector<Vector2> &spawnPositions)
                     if (!occupied)
                     {
                         // Add some randomness - don't fill every tunnel
-                        if (rand() % 4 == 0) // 25% chance to place monster
+                        if (rand() % 5 == 0) // 20% chance to place monster
                         {
-                            spawnPositions.push_back(worldPos);
+                            auto monster = std::make_unique<Monster>(worldPos, MonsterState::IN_TUNNEL);
+                            monsters.push_back(std::move(monster));
                         }
                     }
                 }
@@ -458,7 +662,7 @@ void GamePlay::addMonstersToDistantTunnels()
     }
 
     // Add monsters to some distant tunnels
-    int monstersToAdd = 3 - static_cast<int>(monsters.size());
+    int monstersToAdd = 2 - static_cast<int>(monsters.size());
     for (int i = 0; i < monstersToAdd && i < static_cast<int>(distantTunnels.size()); i++)
     {
         int randomIndex = rand() % distantTunnels.size();
@@ -472,16 +676,73 @@ void GamePlay::addMonstersToDistantTunnels()
     }
 }
 
+void GamePlay::addGreenDragonsToTunnels(std::vector<Vector2> &spawnPositions)
+{
+    const Grid &grid = currentLevel.getGrid();
+    Vector2 playerStart = currentLevel.getPlayerStartPosition();
+
+    // Find suitable tunnel positions for additional dragons
+    for (int y = 0; y < grid.getHeight(); y++)
+    {
+        for (int x = 0; x < grid.getWidth(); x++)
+        {
+            if (grid.isTunnel(x, y))
+            {
+                Vector2 worldPos = grid.gridToWorld(x, y);
+
+                // Calculate distance from player
+                float distance = std::sqrt(std::pow(worldPos.x - playerStart.x, 2) +
+                                           std::pow(worldPos.y - playerStart.y, 2));
+
+                // Only add dragons that are far enough from player
+                if (distance >= 160.0f) // 5+ tiles away (dragons are more dangerous)
+                {
+                    // Check if this position is already occupied
+                    bool occupied = false;
+                    for (const Vector2 &existing : spawnPositions)
+                    {
+                        float distToExisting = std::sqrt(std::pow(worldPos.x - existing.x, 2) +
+                                                         std::pow(worldPos.y - existing.y, 2));
+                        if (distToExisting < 64.0f) // Less than 2 tiles away
+                        {
+                            occupied = true;
+                            break;
+                        }
+                    }
+
+                    if (!occupied && greenDragons.size() < 2) // Max 2 dragons
+                    {
+                        // Lower chance to place dragons (they're more dangerous)
+                        if (rand() % 8 == 0) // 12.5% chance
+                        {
+                            auto dragon = std::make_unique<GreenDragon>(worldPos);
+                            greenDragons.push_back(std::move(dragon));
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
 bool GamePlay::canMonsterBecomeDisembodied() const
 {
     // Check if cooldown allows a new disembodied monster
     if (disembodiedCooldown > 0.0f)
         return false;
 
-    // Check if there's already a disembodied monster
+    // Check if there's already a disembodied monster (red monsters or dragons)
     for (const auto &monster : monsters)
     {
         if (monster->isActive() && monster->getState() == MonsterState::DISEMBODIED)
+        {
+            return false; // Only one disembodied monster at a time
+        }
+    }
+
+    for (const auto &dragon : greenDragons)
+    {
+        if (dragon->isActive() && dragon->getState() == MonsterState::DISEMBODIED)
         {
             return false; // Only one disembodied monster at a time
         }
@@ -500,7 +761,4 @@ void GamePlay::respawnPlayer()
 {
     // Reset player position to starting location
     player.reset(currentLevel.getPlayerStartPosition());
-
-    // Optional: Add brief invincibility period or visual feedback here
-    // For now, just respawn at start position
 }

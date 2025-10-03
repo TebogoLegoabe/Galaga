@@ -33,13 +33,6 @@ public:
     static void drawRedMonster(Vector2 position, Vector2 size);
 
     /**
-     * @brief Draw a rock
-     * @param position Position to draw at
-     * @param size Size of the rock
-     */
-    static void drawRock(Vector2 position, Vector2 size);
-
-    /**
      * @brief Draw green dragon
      * @param position Position to draw at
      * @param size Size to draw the sprite
@@ -61,6 +54,23 @@ public:
      * @param size Size to draw the sprite
      */
     static void drawHarpoon(Vector2 position, Direction direction, Vector2 size);
+
+    /**
+     * @brief Draw fire projectile
+     * @param position Position to draw at
+     * @param direction Direction the fire is traveling
+     * @param size Size to draw the sprite
+     * @param intensity Fire intensity (0.0 to 1.0)
+     * @param animationOffset Animation offset for flickering
+     */
+    static void drawFire(Vector2 position, Direction direction, Vector2 size, float intensity = 1.0f, float animationOffset = 0.0f);
+
+    /**
+     * @brief Draw rock
+     * @param position Position to draw at
+     * @param size Size to draw the sprite
+     */
+    static void drawRock(Vector2 position, Vector2 size);
 
     /**
      * @brief Draw a simple character sprite with customizable colors

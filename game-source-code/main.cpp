@@ -7,9 +7,9 @@
  */
 int main()
 {
-  // object of the Game class
+  // Object of the Game class
   Game game;
-  // run the game
+  // Run the game
   game.run();
 
   // Exit the program

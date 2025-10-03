@@ -1,0 +1,1 @@
+This directory must contain all of the test source code, and only the test source code. Note, doctest.h must not be added to your source code directories. It is automatically downloaded as a dependency by CMake. The file containing the tests must be named: tests.cpp

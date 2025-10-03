@@ -111,6 +111,11 @@ protected:
      */
     void updateStateTimer();
 
+    bool shouldBecomeDisembodied(const Player &player, const Grid &grid);
+    bool isWithinGridBounds(Vector2 worldPos, const Grid &grid) const;
+    float calculateDistanceToPlayer(const Player &player) const;
+    bool isPlayerInSameTunnel(const Player &player, const Grid &grid) const;
+
     MonsterState currentState; // Current monster state (protected for derived classes)
     float speed;               // Movement speed in pixels per frame
     Vector2 targetPosition;    // Target position for smooth movement
@@ -123,10 +128,6 @@ private:
     // AI and pathfinding methods
     Direction findBestDirectionToPlayer(const Player &player, const Grid &grid);
     Direction findRandomValidDirection(const Grid &grid);
-    bool shouldBecomeDisembodied(const Player &player, const Grid &grid);
-    bool isWithinGridBounds(Vector2 worldPos, const Grid &grid) const;
-    float calculateDistanceToPlayer(const Player &player) const;
-    bool isPlayerInSameTunnel(const Player &player, const Grid &grid) const;
 };
 
 #endif // MONSTER_H

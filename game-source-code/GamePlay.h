@@ -12,6 +12,10 @@
 #include "CollisionManager.h"
 #include <algorithm>
 
+// Forward declarations to avoid circular dependencies
+class GreenDragon;
+class Fire;
+
 /**
  * @brief Manages the main gameplay state
  */
@@ -89,15 +93,22 @@ public:
      */
     std::vector<std::unique_ptr<Monster>> &getMonsters();
 
+    /**
+     * @brief Get the green dragons vector for testing
+     * @return Reference to the green dragons vector
+     */
+    std::vector<std::unique_ptr<GreenDragon>> &getGreenDragons();
+
 private:
-    Level currentLevel;                             // The current level
-    Player player;                                  // The player character
-    std::vector<std::unique_ptr<Monster>> monsters; // The monsters
-    bool gameOver;                                  // Game over flag
-    bool levelComplete;                             // Level complete flag
-    bool playerWon;                                 // Player won flag
-    float disembodiedCooldown;                      // Timer to prevent multiple monsters becoming disembodied at once
-    static const float DISEMBODIED_COOLDOWN_TIME;   // Cooldown duration between disembodied transitions
+    Level currentLevel;                                     // The current level
+    Player player;                                          // The player character
+    std::vector<std::unique_ptr<Monster>> monsters;         // The red monsters
+    std::vector<std::unique_ptr<GreenDragon>> greenDragons; // The green dragons
+    bool gameOver;                                          // Game over flag
+    bool levelComplete;                                     // Level complete flag
+    bool playerWon;                                         // Player won flag
+    float disembodiedCooldown;                              // Timer to prevent multiple monsters becoming disembodied at once
+    static const float DISEMBODIED_COOLDOWN_TIME;           // Cooldown duration between disembodied transitions
 
     void updateGameLogic();
     void drawHUD();
@@ -107,6 +118,7 @@ private:
     void drawMonsters();
     void checkPlayerMonsterCollisions();
     void checkHarpoonMonsterCollisions();
+    void checkFirePlayerCollisions();
     bool checkCollision(const GameObject &obj1, const GameObject &obj2) const;
     bool areAllMonstersDead() const;
     void addMonstersToEmptyTunnels(std::vector<Vector2> &spawnPositions);
@@ -114,6 +126,12 @@ private:
     bool canMonsterBecomeDisembodied() const;
     void notifyMonsterBecameDisembodied();
     void respawnPlayer();
+
+    // Green Dragon specific methods
+    void initializeGreenDragons();
+    void updateGreenDragons();
+    void drawGreenDragons();
+    void addGreenDragonsToTunnels(std::vector<Vector2> &spawnPositions);
 };
 
 #endif // GAMEPLAY_H
