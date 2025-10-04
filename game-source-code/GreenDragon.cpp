@@ -77,7 +77,7 @@ void GreenDragon::draw()
     }
 }
 
-void GreenDragon::updateAI(const Player &player, const Grid &grid, bool canBecomeDisembodied,
+void GreenDragon::updateAI(const Player &player, Grid &grid, bool canBecomeDisembodied,
                            std::function<void()> notifyDisembodied)
 {
     if (currentState == MonsterState::DEAD)
@@ -100,7 +100,7 @@ void GreenDragon::updateAI(const Player &player, const Grid &grid, bool canBecom
     stateTimer += GetFrameTime();
 }
 
-void GreenDragon::handleInTunnelAI(const Player &player, const Grid &grid,
+void GreenDragon::handleInTunnelAI(const Player &player, Grid &grid,
                                    bool canBecomeDisembodied, std::function<void()> notifyDisembodied)
 {
     Vector2 playerPos = player.getPosition();
@@ -219,7 +219,7 @@ void GreenDragon::handleInTunnelAI(const Player &player, const Grid &grid,
     }
 }
 
-void GreenDragon::handleDisembodiedAI(const Player &player, const Grid &grid)
+void GreenDragon::handleDisembodiedAI(const Player &player, Grid &grid)
 {
     if (stateTimer > 4.0f)
     {

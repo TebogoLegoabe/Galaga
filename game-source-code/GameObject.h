@@ -3,11 +3,12 @@
 
 #include <raylib-cpp.hpp>
 #include "GameEnums.h"
+#include "Movable.h"
 
 /**
  * @brief Abstract base class for all game objects
  */
-class GameObject
+class GameObject : public Movable
 {
 public:
     /**
@@ -68,18 +69,24 @@ public:
      */
     Vector2 getSize() const;
 
-protected:
-    Vector2 position; // Current position of the object
-    Vector2 size;     // Size of the object
-    bool active;      // Whether the object is active
+    // Movable interface implementation
+    bool move(Direction direction, Grid &grid) override;
+    bool canMoveTo(Vector2 newPos, const Grid &grid) const override;
+    Vector2 getGridPosition(const Grid &grid) const override;
+    float getSpeed() const override;
+    void setSpeed(float newSpeed) override;
 
-    /**
-     * @brief Check if the object is within screen bounds
-     * @param screenWidth Width of the screen
-     * @param screenHeight Height of the screen
-     * @return true if within bounds, false otherwise
-     */
+protected:
+    Vector2 position;       // Current position
+    Vector2 size;           // Size of the object
+    bool active;            // Active state
+    float speed;            // Movement speed
+    Vector2 targetPosition; // Target for smooth movement
+    bool isMoving;          // Movement state
+
+    void updateMovement() override;
     bool isWithinBounds(int screenWidth, int screenHeight) const;
+    bool isWithinGridBounds(Vector2 worldPos, const Grid &grid) const;
 };
 
 #endif // GAME_OBJECT_H

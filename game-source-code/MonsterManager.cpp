@@ -128,7 +128,7 @@ void MonsterManager::initialize(const Level &level, Vector2 playerStartPos)
     }
 }
 
-void MonsterManager::update(const Player &player, const Grid &grid, bool canBecomeDisembodied,
+void MonsterManager::update(const Player &player, Grid &grid, bool canBecomeDisembodied,
                             std::function<void()> notifyDisembodied)
 {
     for (auto &monster : monsters)

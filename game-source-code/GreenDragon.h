@@ -39,7 +39,7 @@ public:
      * @param canBecomeDisembodied Whether the monster is allowed to become disembodied
      * @param notifyDisembodied Callback function to notify when monster becomes disembodied
      */
-    void updateAI(const Player &player, const Grid &grid, bool canBecomeDisembodied,
+    void updateAI(const Player &player, Grid &grid, bool canBecomeDisembodied,
                   std::function<void()> notifyDisembodied = nullptr);
 
     /**
@@ -81,7 +81,7 @@ private:
      * @param canBecomeDisembodied Whether can become disembodied
      * @param notifyDisembodied Callback for disembodied notification
      */
-    void handleInTunnelAI(const Player &player, const Grid &grid,
+    void handleInTunnelAI(const Player &player, Grid &grid,
                           bool canBecomeDisembodied, std::function<void()> notifyDisembodied);
 
     /**
@@ -89,7 +89,7 @@ private:
      * @param player Reference to the player
      * @param grid Reference to the game grid
      */
-    void handleDisembodiedAI(const Player &player, const Grid &grid);
+    void handleDisembodiedAI(const Player &player, Grid &grid);
 
     /**
      * @brief Check if there's a direct tunnel path to the player for fire breathing

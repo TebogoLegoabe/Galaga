@@ -36,7 +36,7 @@ public:
      * @param canBecomeDisembodied Whether monsters can become disembodied
      * @param notifyDisembodied Callback when monster becomes disembodied
      */
-    void update(const Player &player, const Grid &grid, bool canBecomeDisembodied,
+    void update(const Player &player, Grid &grid, bool canBecomeDisembodied,
                 std::function<void()> notifyDisembodied);
 
     /**
