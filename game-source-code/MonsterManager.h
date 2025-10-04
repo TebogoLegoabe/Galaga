@@ -11,79 +11,38 @@
 #include "Grid.h"
 #include "Level.h"
 
-/**
- * @brief Manages all monster-related functionality
- */
 class MonsterManager
 {
 public:
-    /**
-     * @brief Constructor
-     */
     MonsterManager();
 
-    /**
-     * @brief Initialize monsters for a level
-     * @param level Reference to the current level
-     * @param playerStartPos Player's starting position
-     */
     void initialize(const Level &level, Vector2 playerStartPos);
-
-    /**
-     * @brief Update all monsters
-     * @param player Reference to the player
-     * @param grid Reference to the game grid
-     * @param canBecomeDisembodied Whether monsters can become disembodied
-     * @param notifyDisembodied Callback when monster becomes disembodied
-     */
     void update(const Player &player, Grid &grid, bool canBecomeDisembodied,
                 std::function<void()> notifyDisembodied);
-
-    /**
-     * @brief Draw all monsters
-     */
     void draw();
 
-    /**
-     * @brief Get the monsters vector
-     * @return Reference to monsters vector
-     */
     std::vector<std::unique_ptr<Monster>> &getMonsters();
-
-    /**
-     * @brief Get the monsters vector (const version)
-     * @return Const reference to monsters vector
-     */
     const std::vector<std::unique_ptr<Monster>> &getMonsters() const;
-
-    /**
-     * @brief Check if all monsters are dead
-     * @return true if all monsters are dead
-     */
     bool areAllMonstersDead() const;
-
-    /**
-     * @brief Clear all monsters
-     */
     void clear();
 
 private:
     std::vector<std::unique_ptr<Monster>> monsters;
 
-    /**
-     * @brief Add monsters to empty tunnels
-     * @param spawnPositions Vector to add spawn positions to
-     * @param grid Reference to the game grid
-     * @param playerStart Player's starting position
-     */
-    void addMonstersToEmptyTunnels(std::vector<Vector2> &spawnPositions,
-                                   const Grid &grid, Vector2 playerStart);
+    // Initialization helpers
+    void ensureMinimumSpawns(std::vector<Vector2> &spawnPositions, const Grid &grid, Vector2 playerStartPos);
+    void createGreenDragons(const std::vector<Vector2> &spawnPositions, int count);
+    void createRemainingMonsters(const std::vector<Vector2> &spawnPositions);
+    void removeMonstersTooCloseToPlayer(Vector2 playerStartPos);
+    void ensureMinimumGreenDragons(const Grid &grid, Vector2 playerStartPos, int minCount);
+    void ensureMinimumMonsterCount(const Grid &grid, Vector2 playerStartPos, int minCount);
 
-    /**
-     * @brief Add monsters to distant tunnels
-     * @param grid Reference to the game grid
-     * @param playerStart Player's starting position
-     */
+    // Utility functions
+    template <typename T>
+    int countMonsterType() const;
+    std::vector<Vector2> findDistantTunnels(const Grid &grid, Vector2 playerStartPos, float minDistance);
+
+    void addMonstersToEmptyTunnels(std::vector<Vector2> &spawnPositions, const Grid &grid, Vector2 playerStart);
     void addMonstersToDistantTunnels(const Grid &grid, Vector2 playerStart);
 };
 

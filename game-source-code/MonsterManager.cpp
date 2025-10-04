@@ -3,129 +3,129 @@
 #include <cmath>
 #include <algorithm>
 
-MonsterManager::MonsterManager()
-{
-}
+MonsterManager::MonsterManager() {}
 
 void MonsterManager::initialize(const Level &level, Vector2 playerStartPos)
 {
     monsters.clear();
 
-    // Get monster spawn positions from the level
     std::vector<Vector2> spawnPositions = level.getMonsterSpawnPositions();
-
-    // Add additional monster spawns in empty tunnels
     addMonstersToEmptyTunnels(spawnPositions, level.getGrid(), playerStartPos);
+    ensureMinimumSpawns(spawnPositions, level.getGrid(), playerStartPos);
 
-    // Ensure we have enough spawn positions for at least 2 green dragons
-    int minSpawns = 5; // We want at least 5 monsters total to have variety
+    createGreenDragons(spawnPositions, 2);
+    createRemainingMonsters(spawnPositions);
+    removeMonstersTooCloseToPlayer(playerStartPos);
+    ensureMinimumGreenDragons(level.getGrid(), playerStartPos, 2);
+    ensureMinimumMonsterCount(level.getGrid(), playerStartPos, 3);
+}
+
+void MonsterManager::ensureMinimumSpawns(std::vector<Vector2> &spawnPositions,
+                                         const Grid &grid, Vector2 playerStartPos)
+{
+    const int minSpawns = 5;
     while (spawnPositions.size() < minSpawns)
     {
-        addMonstersToDistantTunnels(level.getGrid(), playerStartPos);
-        // Add the new monsters' positions to spawnPositions for the next check
+        addMonstersToDistantTunnels(grid, playerStartPos);
         if (monsters.size() > 0)
-        {
-            break; // addMonstersToDistantTunnels creates monsters directly
-        }
+            break;
     }
+}
 
-    // First, create exactly 2 green dragons from the first spawn positions
-    int greenDragonsCreated = 0;
-    size_t i = 0;
-    for (; i < spawnPositions.size() && greenDragonsCreated < 2; ++i)
+void MonsterManager::createGreenDragons(const std::vector<Vector2> &spawnPositions, int count)
+{
+    int created = 0;
+    for (size_t i = 0; i < spawnPositions.size() && created < count; ++i)
     {
-        const Vector2 &spawnPos = spawnPositions[i];
-        auto greenDragon = std::make_unique<GreenDragon>(spawnPos);
-        monsters.push_back(std::move(greenDragon));
-        greenDragonsCreated++;
+        monsters.push_back(std::make_unique<GreenDragon>(spawnPositions[i]));
+        created++;
     }
+}
 
-    // Create remaining monsters at other spawn positions with variety
-    for (; i < spawnPositions.size(); ++i)
+void MonsterManager::createRemainingMonsters(const std::vector<Vector2> &spawnPositions)
+{
+    size_t startIndex = std::min(size_t(2), spawnPositions.size());
+
+    for (size_t i = startIndex; i < spawnPositions.size(); ++i)
     {
-        const Vector2 &spawnPos = spawnPositions[i];
+        int monsterType = rand() % 10;
 
-        // Create a mix of different monster types (no more green dragons needed)
-        int monsterType = rand() % 10; // Random number 0-9
-
-        if (monsterType < 4) // 40% Red Monsters (aggressive)
-        {
-            auto redMonster = std::make_unique<RedMonster>(spawnPos);
-            monsters.push_back(std::move(redMonster));
-        }
-        else // 60% Regular Monsters (base enemy)
-        {
-            auto monster = std::make_unique<Monster>(spawnPos, MonsterState::IN_TUNNEL);
-            monsters.push_back(std::move(monster));
-        }
+        if (monsterType < 4) // 40% Red
+            monsters.push_back(std::make_unique<RedMonster>(spawnPositions[i]));
+        else // 60% Regular
+            monsters.push_back(std::make_unique<Monster>(spawnPositions[i], MonsterState::IN_TUNNEL));
     }
+}
 
-    // Remove monsters that are too close to player (safety check)
+void MonsterManager::removeMonstersTooCloseToPlayer(Vector2 playerStartPos)
+{
     monsters.erase(
         std::remove_if(monsters.begin(), monsters.end(),
                        [&playerStartPos](const std::unique_ptr<Monster> &monster)
                        {
-                           Vector2 monsterPos = monster->getPosition();
-                           float distance = std::sqrt(std::pow(monsterPos.x - playerStartPos.x, 2) +
-                                                      std::pow(monsterPos.y - playerStartPos.y, 2));
-                           return distance < 96.0f; // Remove if closer than 3 tiles
+                           Vector2 pos = monster->getPosition();
+                           float dist = std::sqrt(std::pow(pos.x - playerStartPos.x, 2) +
+                                                  std::pow(pos.y - playerStartPos.y, 2));
+                           return dist < 96.0f;
                        }),
         monsters.end());
+}
 
-    // If we accidentally removed green dragons, ensure we still have at least 2
-    int currentGreenDragons = 0;
+void MonsterManager::ensureMinimumGreenDragons(const Grid &grid, Vector2 playerStartPos, int minCount)
+{
+    int current = countMonsterType<GreenDragon>();
+
+    while (current < minCount)
+    {
+        auto distantTunnels = findDistantTunnels(grid, playerStartPos, 128.0f);
+        if (distantTunnels.empty())
+            break;
+
+        int idx = rand() % distantTunnels.size();
+        monsters.push_back(std::make_unique<GreenDragon>(distantTunnels[idx]));
+        current++;
+    }
+}
+
+void MonsterManager::ensureMinimumMonsterCount(const Grid &grid, Vector2 playerStartPos, int minCount)
+{
+    if (static_cast<int>(monsters.size()) < minCount)
+        addMonstersToDistantTunnels(grid, playerStartPos);
+}
+
+template <typename T>
+int MonsterManager::countMonsterType() const
+{
+    int count = 0;
     for (const auto &monster : monsters)
     {
-        if (dynamic_cast<GreenDragon *>(monster.get()) != nullptr)
-        {
-            currentGreenDragons++;
-        }
+        if (dynamic_cast<T *>(monster.get()) != nullptr)
+            count++;
     }
+    return count;
+}
 
-    // Add more green dragons if needed
-    while (currentGreenDragons < 2)
+std::vector<Vector2> MonsterManager::findDistantTunnels(const Grid &grid, Vector2 playerStartPos, float minDistance)
+{
+    std::vector<Vector2> tunnels;
+
+    for (int y = 0; y < grid.getHeight(); y++)
     {
-        // Find a distant tunnel position
-        std::vector<Vector2> distantTunnels;
-        const Grid &grid = level.getGrid();
-
-        for (int y = 0; y < grid.getHeight(); y++)
+        for (int x = 0; x < grid.getWidth(); x++)
         {
-            for (int x = 0; x < grid.getWidth(); x++)
+            if (grid.isTunnel(x, y))
             {
-                if (grid.isTunnel(x, y))
-                {
-                    Vector2 worldPos = grid.gridToWorld(x, y);
-                    float distance = std::sqrt(std::pow(worldPos.x - playerStartPos.x, 2) +
-                                               std::pow(worldPos.y - playerStartPos.y, 2));
+                Vector2 worldPos = grid.gridToWorld(x, y);
+                float dist = std::sqrt(std::pow(worldPos.x - playerStartPos.x, 2) +
+                                       std::pow(worldPos.y - playerStartPos.y, 2));
 
-                    if (distance >= 128.0f) // 4+ tiles away
-                    {
-                        distantTunnels.push_back(worldPos);
-                    }
-                }
+                if (dist >= minDistance)
+                    tunnels.push_back(worldPos);
             }
         }
-
-        if (!distantTunnels.empty())
-        {
-            int randomIndex = rand() % distantTunnels.size();
-            Vector2 spawnPos = distantTunnels[randomIndex];
-            auto greenDragon = std::make_unique<GreenDragon>(spawnPos);
-            monsters.push_back(std::move(greenDragon));
-            currentGreenDragons++;
-        }
-        else
-        {
-            break; // Can't find suitable positions
-        }
     }
 
-    // Ensure minimum of 3 monsters total
-    if (monsters.size() < 3)
-    {
-        addMonstersToDistantTunnels(level.getGrid(), playerStartPos);
-    }
+    return tunnels;
 }
 
 void MonsterManager::update(const Player &player, Grid &grid, bool canBecomeDisembodied,
