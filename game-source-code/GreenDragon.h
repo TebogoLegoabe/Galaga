@@ -2,6 +2,8 @@
 #define GREEN_DRAGON_H
 
 #include "Monster.h"
+#include "PathFinding.h"
+#include "TacticalAI.h"
 #include <memory>
 #include <random>
 
@@ -37,7 +39,8 @@ public:
      * @param canBecomeDisembodied Whether the monster is allowed to become disembodied
      * @param notifyDisembodied Callback function to notify when monster becomes disembodied
      */
-    void updateAI(const Player &player, const Grid &grid, bool canBecomeDisembodied, std::function<void()> notifyDisembodied = nullptr);
+    void updateAI(const Player &player, const Grid &grid, bool canBecomeDisembodied,
+                  std::function<void()> notifyDisembodied = nullptr);
 
     /**
      * @brief Get the dragon's fire projectile
@@ -72,34 +75,21 @@ private:
     static const float FIRE_BREATH_RANGE;         // Maximum range to breathe fire
 
     /**
-     * @brief Find the best direction to move toward the player using smart pathfinding
+     * @brief Handle in-tunnel AI behavior
      * @param player Reference to the player
      * @param grid Reference to the game grid
-     * @return Best direction to move
+     * @param canBecomeDisembodied Whether can become disembodied
+     * @param notifyDisembodied Callback for disembodied notification
      */
-    Direction findSmartDirectionToPlayer(const Player &player, const Grid &grid);
+    void handleInTunnelAI(const Player &player, const Grid &grid,
+                          bool canBecomeDisembodied, std::function<void()> notifyDisembodied);
 
     /**
-     * @brief Find a tactical position for better fire breathing opportunities
+     * @brief Handle disembodied AI behavior
      * @param player Reference to the player
      * @param grid Reference to the game grid
-     * @return Direction to move for tactical advantage
      */
-    Direction findTacticalPosition(const Player &player, const Grid &grid);
-
-    /**
-     * @brief Find a random valid direction to move
-     * @param grid Reference to the game grid
-     * @return Random valid direction
-     */
-    Direction findRandomValidDirection(const Grid &grid);
-
-    /**
-     * @brief Check if player is within fire breathing range
-     * @param playerPos Player position
-     * @return true if player is within range
-     */
-    bool isPlayerInFireRange(Vector2 playerPos) const;
+    void handleDisembodiedAI(const Player &player, const Grid &grid);
 
     /**
      * @brief Check if there's a direct tunnel path to the player for fire breathing
@@ -108,13 +98,6 @@ private:
      * @return true if there's a clear tunnel path
      */
     bool hasDirectTunnelPathToPlayer(const Player &player, const Grid &grid) const;
-
-    /**
-     * @brief Calculate direction to breathe fire towards player
-     * @param playerPos Player position
-     * @return Direction to breathe fire
-     */
-    Direction calculateFireDirection(Vector2 playerPos) const;
 
     /**
      * @brief Update fire breath cooldown
