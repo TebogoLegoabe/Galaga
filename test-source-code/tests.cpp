@@ -15,6 +15,8 @@
 #include "InputHandler.h"
 #include "GreenDragon.h"
 #include "Fire.h"
+#include "CollisionManager.h"
+#include "MonsterManager.h"
 
 // ==================== GRID TESTS ====================
 
@@ -983,4 +985,84 @@ TEST_CASE("Fire speed can be set and retrieved")
 
     // Assert
     CHECK(fire.getSpeed() == newSpeed);
+}
+
+// ==================== UNIFIED COLLISION MANAGER TESTS ====================
+
+TEST_CASE("CollisionManager detects player-monster collision")
+{
+    // Arrange
+    Player player({100, 100});
+    MonsterManager monsterManager;
+    Level level;
+    level.initializeDefault();
+
+    // Add a monster at player's position
+    auto &monsters = monsterManager.getMonsters();
+    monsters.push_back(std::make_unique<Monster>(Vector2{100, 100}, MonsterState::IN_TUNNEL));
+
+    // Act
+    bool collision = CollisionManager::checkPlayerMonsterCollision(player, monsterManager);
+
+    // Assert
+    CHECK(collision == true);
+}
+
+TEST_CASE("CollisionManager handles no collision correctly")
+{
+    // Arrange
+    Player player({100, 100});
+    MonsterManager monsterManager;
+
+    auto &monsters = monsterManager.getMonsters();
+    monsters.push_back(std::make_unique<Monster>(Vector2{500, 500}, MonsterState::IN_TUNNEL));
+
+    // Act
+    bool collision = CollisionManager::checkPlayerMonsterCollision(player, monsterManager);
+
+    // Assert
+    CHECK(collision == false);
+}
+
+TEST_CASE("CollisionManager ignores dead monsters")
+{
+    // Arrange
+    Player player({100, 100});
+    MonsterManager monsterManager;
+
+    auto &monsters = monsterManager.getMonsters();
+    auto monster = std::make_unique<Monster>(Vector2{100, 100}, MonsterState::DEAD);
+    monsters.push_back(std::move(monster));
+
+    // Act
+    bool collision = CollisionManager::checkPlayerMonsterCollision(player, monsterManager);
+
+    // Assert
+    CHECK(collision == false);
+}
+
+TEST_CASE("CollisionManager deactivates harpoon after hit")
+{
+    // Arrange
+    Grid grid(10, 10, 32);
+    grid.setTile(5, 5, TileType::TUNNEL);
+
+    Player player(grid.gridToWorld(4, 5));
+    MonsterManager monsterManager;
+
+    auto &monsters = monsterManager.getMonsters();
+    monsters.push_back(std::make_unique<Monster>(grid.gridToWorld(6, 5), MonsterState::IN_TUNNEL));
+
+    player.shoot();
+
+    // Act
+    for (int i = 0; i < 10; i++)
+    {
+        player.getHarpoon().update();
+    }
+
+    CollisionManager::checkHarpoonMonsterCollisions(player, monsterManager, grid);
+
+    // Assert
+    CHECK(player.getHarpoon().isHarpoonActive() == false);
 }

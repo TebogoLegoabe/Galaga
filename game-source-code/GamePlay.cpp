@@ -144,26 +144,25 @@ std::vector<std::unique_ptr<Monster>> &GamePlay::getMonsters()
 
 void GamePlay::updateGameLogic()
 {
-    // Update player harpoon and check for collisions with monsters
+    // 1. Update harpoon and check destruction
     Harpoon &harpoon = player.getHarpoon();
     if (harpoon.isHarpoonActive())
     {
-        // Check if harpoon should be destroyed (hit wall, etc.)
         if (harpoon.shouldDestroy(currentLevel.getGrid()))
         {
             harpoon.deactivate();
         }
         else
         {
-            // Check harpoon-monster collisions
-            CollisionHandler::checkHarpoonMonsterCollisions(player, monsterManager,
+            // Check harpoon-monster collisions (unified)
+            CollisionManager::checkHarpoonMonsterCollisions(player, monsterManager,
                                                             currentLevel.getGrid());
         }
     }
 
-    if (CollisionHandler::checkFirePlayerCollision(player, monsterManager))
+    // 2. Check fire-player collision (unified)
+    if (CollisionManager::checkFirePlayerCollision(player, monsterManager))
     {
-        // Player hit by fire - lose a life
         bool stillAlive = player.loseLife();
 
         if (!stillAlive)
@@ -175,29 +174,27 @@ void GamePlay::updateGameLogic()
         {
             respawnPlayer();
         }
-        return; // Don't check other collisions this frame
+        return;
     }
 
-    // Check for collisions between player and monsters
-    if (CollisionHandler::checkPlayerMonsterCollision(player, monsterManager))
+    // 3. Check player-monster collision (unified)
+    if (CollisionManager::checkPlayerMonsterCollision(player, monsterManager))
     {
-        // Player collided with monster - lose a life
-        bool stillAlive = player.loseLife(); // Decrements lives by 1
+        bool stillAlive = player.loseLife();
 
-        if (!stillAlive) // This means lives == 0
+        if (!stillAlive)
         {
-            // No lives left - game over
             gameOver = true;
             playerWon = false;
         }
         else
         {
-            // Still has lives - respawn player at start position
             respawnPlayer();
         }
+        return;
     }
 
-    // Check if all monsters are dead (win condition)
+    // 4. Check if all monsters are dead (win condition)
     if (monsterManager.areAllMonstersDead())
     {
         gameOver = true;

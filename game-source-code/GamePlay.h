@@ -6,7 +6,7 @@
 #include "Level.h"
 #include "Player.h"
 #include "MonsterManager.h"
-#include "CollisionHandler.h"
+#include "CollisionManager.h"
 #include "InputHandler.h"
 
 /**

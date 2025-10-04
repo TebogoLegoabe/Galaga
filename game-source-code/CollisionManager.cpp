@@ -1,8 +1,13 @@
 #include "CollisionManager.h"
+#include "MonsterManager.h"
+#include "GreenDragon.h"
+#include "Fire.h"
+#include "Rock.h"
 
-Monster *CollisionManager::checkPlayerMonsterCollision(const Player &player, const std::vector<std::unique_ptr<Monster>> &monsters)
+bool CollisionManager::checkPlayerMonsterCollision(Player &player, MonsterManager &monsterManager)
 {
     Rectangle playerBounds = player.getBounds();
+    auto &monsters = monsterManager.getMonsters();
 
     for (const auto &monster : monsters)
     {
@@ -11,85 +16,114 @@ Monster *CollisionManager::checkPlayerMonsterCollision(const Player &player, con
             Rectangle monsterBounds = monster->getBounds();
             if (CheckCollisionRecs(playerBounds, monsterBounds))
             {
-                return monster.get();
+                return true;
             }
         }
     }
-    return nullptr;
+    return false;
 }
 
-Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon, const std::vector<std::unique_ptr<Monster>> &monsters, const Grid &grid)
+void CollisionManager::checkHarpoonMonsterCollisions(Player &player, MonsterManager &monsterManager,
+                                                     const Grid &grid)
 {
-    // Use getBounds() method instead of accessing private isActive
+    Harpoon &harpoon = player.getHarpoon();
+    if (!harpoon.isHarpoonActive())
+        return;
+
     Rectangle harpoonBounds = harpoon.getBounds();
+    auto &monsters = monsterManager.getMonsters();
 
-    // If harpoon bounds are empty/invalid, it's probably not active
-    if (harpoonBounds.width <= 0 || harpoonBounds.height <= 0)
-        return nullptr;
-
-    for (const auto &monster : monsters)
+    for (auto &monster : monsters)
     {
         if (monster && monster->isActive() && !monster->isDead())
         {
             Rectangle monsterBounds = monster->getBounds();
             if (CheckCollisionRecs(harpoonBounds, monsterBounds))
             {
-                // Kill the monster
                 monster->setState(MonsterState::DEAD);
-
-                // Try to deactivate the harpoon (if it has a public method)
-                // harpoon.setActive(false); // This might not exist, so we'll skip it
-
-                return monster.get();
+                harpoon.deactivate();
+                return;
             }
         }
     }
-    return nullptr;
 }
 
-Monster *CollisionManager::checkPlayerMonsterCollision(const Player &player, const std::vector<Monster *> &monsters)
+bool CollisionManager::checkFirePlayerCollision(Player &player, MonsterManager &monsterManager)
+{
+    Rectangle playerBounds = player.getBounds();
+    auto &monsters = monsterManager.getMonsters();
+
+    for (auto &monster : monsters)
+    {
+        if (monster && monster->isActive() && !monster->isDead())
+        {
+            GreenDragon *dragon = dynamic_cast<GreenDragon *>(monster.get());
+            if (dragon)
+            {
+                Fire &fire = dragon->getFire();
+                if (fire.isFireActive())
+                {
+                    Rectangle fireBounds = fire.getBounds();
+                    if (CheckCollisionRecs(playerBounds, fireBounds))
+                    {
+                        fire.deactivate();
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
+}
+
+bool CollisionManager::checkRockPlayerCollision(Player &player, const std::vector<std::unique_ptr<Rock>> &rocks)
 {
     Rectangle playerBounds = player.getBounds();
 
-    for (Monster *monster : monsters)
+    for (const auto &rock : rocks)
     {
-        if (monster && monster->isActive() && !monster->isDead())
+        if (rock && rock->isActive() && rock->isFalling())
         {
-            Rectangle monsterBounds = monster->getBounds();
-            if (CheckCollisionRecs(playerBounds, monsterBounds))
+            Rectangle rockBounds = rock->getBounds();
+            if (CheckCollisionRecs(playerBounds, rockBounds))
             {
-                return monster;
+                return true;
             }
         }
     }
-    return nullptr;
+    return false;
 }
 
-Monster *CollisionManager::checkHarpoonMonsterCollision(Harpoon &harpoon, const std::vector<Monster *> &monsters, const Grid &grid)
+void CollisionManager::checkRockMonsterCollisions(const std::vector<std::unique_ptr<Rock>> &rocks,
+                                                  MonsterManager &monsterManager)
 {
-    // Use getBounds() method instead of accessing private isActive
-    Rectangle harpoonBounds = harpoon.getBounds();
+    auto &monsters = monsterManager.getMonsters();
 
-    // If harpoon bounds are empty/invalid, it's probably not active
-    if (harpoonBounds.width <= 0 || harpoonBounds.height <= 0)
-        return nullptr;
-
-    for (Monster *monster : monsters)
+    for (const auto &rock : rocks)
     {
-        if (monster && monster->isActive() && !monster->isDead())
+        if (rock && rock->isActive() && rock->isFalling())
         {
-            Rectangle monsterBounds = monster->getBounds();
-            if (CheckCollisionRecs(harpoonBounds, monsterBounds))
+            Rectangle rockBounds = rock->getBounds();
+
+            for (auto &monster : monsters)
             {
-                // Kill the monster
-                monster->setState(MonsterState::DEAD);
-
-                // Try to deactivate the harpoon (if it has a public method)
-                // harpoon.setActive(false); // This might not exist, so we'll skip it
-
-                return monster;
+                if (monster && monster->isActive() && !monster->isDead())
+                {
+                    Rectangle monsterBounds = monster->getBounds();
+                    if (CheckCollisionRecs(rockBounds, monsterBounds))
+                    {
+                        monster->setState(MonsterState::DEAD);
+                        // Rock continues falling after crushing monster
+                    }
+                }
             }
         }
     }
-    return nullptr;
+}
+
+bool CollisionManager::checkCollision(const GameObject &obj1, const GameObject &obj2)
+{
+    Rectangle bounds1 = obj1.getBounds();
+    Rectangle bounds2 = obj2.getBounds();
+    return CheckCollisionRecs(bounds1, bounds2);
 }
